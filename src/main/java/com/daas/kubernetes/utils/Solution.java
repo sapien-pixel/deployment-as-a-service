@@ -1,4 +1,4 @@
-package com.kuberetes.daas.utils;
+package com.daas.kubernetes.utils;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.Config;

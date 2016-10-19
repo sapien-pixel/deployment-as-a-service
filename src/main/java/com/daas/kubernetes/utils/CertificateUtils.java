@@ -1,4 +1,4 @@
-package com.kuberetes.daas.utils;
+package com.daas.kubernetes.utils;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
