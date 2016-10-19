@@ -11,13 +11,13 @@ import java.io.IOException;
 public class Solution {
 
 	public static void main(String[] args) throws IOException {
-		String ipAddr = "35.160.175.116";
-		String port = "443";
+		String ipAddr = "ip";
+		String port = "port";
 		String URI = "https://" + ipAddr+ ":" + port;
 		Config config = new ConfigBuilder().withMasterUrl(URI)
 				.withTrustCerts(true)			          
 				.withUsername("admin")
-				.withPassword("kjJaRJvARbgIdKCD")
+				.withPassword("")
 				.build();
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient(config);
 		System.out.println(kubernetesClient.services().get().getAdditionalProperties());	
