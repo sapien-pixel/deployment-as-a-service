@@ -8,16 +8,18 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.io.IOException;
 
+import com.daas.common.ConfFactory;
+
 public class Solution {
 
 	public static void main(String[] args) throws IOException {
-		String ipAddr = "ip";
-		String port = "port";
+		String ipAddr = ConfFactory.getConf().getString("kube.master.ip");
+		String port = ConfFactory.getConf().getString("kube.master.port");
 		String URI = "https://" + ipAddr+ ":" + port;
 		Config config = new ConfigBuilder().withMasterUrl(URI)
 				.withTrustCerts(true)			          
-				.withUsername("admin")
-				.withPassword("")
+				.withUsername(ConfFactory.getConf().getString("kube.master.userName"))
+				.withPassword(ConfFactory.getConf().getString("kube.master.password"))
 				.build();
 		KubernetesClient kubernetesClient = new DefaultKubernetesClient(config);
 		System.out.println(kubernetesClient.services().get().getAdditionalProperties());	

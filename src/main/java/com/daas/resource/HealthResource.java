@@ -11,15 +11,13 @@ import org.slf4j.LoggerFactory;
 
 @Path("/health")
 public class HealthResource {
-
+	
 	private static Logger log = LoggerFactory.getLogger(HealthResource.class.getName());
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response Health(){		
 		log.info("API Health check");
-		log.debug("debug");
-		log.warn("warn");
 		return Response.ok("Healthy").build();
 	}
 }
