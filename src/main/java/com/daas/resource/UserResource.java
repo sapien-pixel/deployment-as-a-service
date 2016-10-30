@@ -32,6 +32,8 @@ public class UserResource {
 		
 		// check for null values
 		
+		System.out.println(user.toString());
+		
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
 		
