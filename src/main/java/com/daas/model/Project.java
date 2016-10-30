@@ -18,25 +18,28 @@ import javax.persistence.Table;
 public class Project {
 
 	@Id
-    @Column(name="project_id")
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
+	@Column(name="project_id")
+	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private long project_id;
-	
+
 	@Column(name="projectName")
 	private String projectName;
-	
+
 	@Column(name="description")
 	private String description;
-	
+
 	@ManyToOne
 	@JoinColumn(name="user_id")
 	private User user_id;
-	
+
 	@Column(name="cloudProvider")
 	private String cloudProvider;
-	
+
 	@Column(name="dateCreated")
 	private long dateCreated;
+
+	@Column(name="project_url")
+	private String project_url;
 
 	/**
 	 * @return the project_id
@@ -121,5 +124,19 @@ public class Project {
 	public void setDateCreated(long dateCreated) {
 		this.dateCreated = dateCreated;
 	}
-	
+
+	/**
+	 * @return the project_url
+	 */
+	public String getProject_url() {
+		return project_url;
+	}
+
+	/**
+	 * @param project_url the project_url to set
+	 */
+	public void setProject_url(String project_url) {
+		this.project_url = project_url;
+	}
+
 }
