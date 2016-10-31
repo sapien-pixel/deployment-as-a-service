@@ -28,11 +28,10 @@ public class UserResource {
 	@POST
 	@Path("/signup")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response addUser(User user){
+	public Response addUser(User user) throws Exception {
 		
 		// check for null values
-		
-		System.out.println(user.toString());
+		DaasUtil.checkForNull(user);
 		
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
@@ -49,8 +48,6 @@ public class UserResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getUser(User user){
 		
-		// check for null values
-		
 		user = userService.validateUser(user);
 		
 		if(user==null)
@@ -66,7 +63,7 @@ public class UserResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response updateUser(User user){
 		
-		// check for null values
+		// check for null values?
 		
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
@@ -85,9 +82,7 @@ public class UserResource {
 	@Path("/delete")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteUser(User user){
-		
-		// check for null values
-				
+						
 		user = userService.delete(user);
 		
 		if(user==null)

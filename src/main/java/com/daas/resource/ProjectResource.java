@@ -26,9 +26,7 @@ public class ProjectResource {
 	@Path("/add")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response addProject(Project project){
-		
-		// check for null values
-		
+				
 		project.setDateCreated(System.currentTimeMillis());
 		project = projectService.create(project);
 		return Response.ok("Succesfully added Project").entity(project).build();		
@@ -39,8 +37,6 @@ public class ProjectResource {
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getProject(@PathParam("id") long id){
-		
-		// check for null values
 		
 		Project project = projectService.read(id);
 		
@@ -56,8 +52,6 @@ public class ProjectResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response updateProject(Project project){
 		
-		// check for null values
-				
 		project = projectService.update(project);
 		
 		if(project==null)
@@ -72,8 +66,6 @@ public class ProjectResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteProject(Project project){
 		
-		// check for null values
-				
 		project = projectService.delete(project);
 		
 		if(project==null)
