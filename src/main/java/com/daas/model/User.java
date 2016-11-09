@@ -39,7 +39,10 @@ public class User {
 	
 	@Column(name="dateRegistered")
 	private long dateRegistered;
-
+	
+	@Column(name="managementServerURL")
+	private String managementServerURL; 
+	
 	/**
 	 * @return the user_id
 	 */
@@ -137,5 +140,12 @@ public class User {
 	public void setDateRegistered(long dateRegistered) {
 		this.dateRegistered = dateRegistered;
 	}
+	
+	public String getManagementServerURL() {
+		return managementServerURL;
+	}
 
+	public void setManagementServerURL(String managementServerURL) {
+		this.managementServerURL = managementServerURL;
+	}
 }
