@@ -11,7 +11,7 @@ public class AmazonEC2CommonTest {
 	@Test
 	public void createSecurityGroupTest() {
 		
-		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials("AKIAIJTGKGCJDC6SJQZA", "uJWjgaHg3doxf/t3H3Ao3A/6aWhv5zaATS97jmjv"));
+		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials("", ""));
 		
 		String amiId = ConfFactory.getConf().getString("ec2.common.amiId");
 		String instanceType = ConfFactory.getConf().getString("ec2.kubeMS.instanceType");
@@ -28,7 +28,7 @@ public class AmazonEC2CommonTest {
 	@Test
 	public void shareAMITest() {
 		
-		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials("AKIAJAF53HYIYSEX4PVQ", "eML45oG8ITi+G/Cqgl1L+Fl86sXlnNqa1QNi0wq8"));
+		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials("", ""));
 
 		String amiId = ConfFactory.getConf().getString("ec2.common.amiId");		
 		ec2.shareAMIAcrossAccounts(amiId, "022487948790");
