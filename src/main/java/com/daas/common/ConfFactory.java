@@ -14,6 +14,14 @@ public class ConfFactory {
 		return conf;
 	}
 	
+	/**
+	 * @return the conf
+	 */
+	public static Config getPrivateConf() {
+		
+		Config config = ConfigFactory.load("awsCreds.properties");		
+		return config;
+	}
 	
 	
 }
