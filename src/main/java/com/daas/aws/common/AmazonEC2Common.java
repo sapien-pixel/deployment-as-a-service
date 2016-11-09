@@ -2,6 +2,7 @@ package com.daas.aws.common;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -21,15 +22,16 @@ import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.amazonaws.services.ec2.model.KeyPair;
-import com.amazonaws.regions.Region;
+import com.amazonaws.services.ec2.model.LaunchPermission;
+import com.amazonaws.services.ec2.model.LaunchPermissionModifications;
+import com.amazonaws.services.ec2.model.ModifyImageAttributeRequest;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
-import com.amazonaws.util.EC2MetadataUtils;
 
 /**
- * Base class for common EC2 activities(start,stop,getStatus, getLaunchTime)
+ * Base class for common EC2 activities(create, start, stop, getStatus, getLaunchTime)
  * @author vmaheshwari
  */
 public class AmazonEC2Common {
@@ -42,68 +44,85 @@ public class AmazonEC2Common {
 	/**
 	 * Constructor to instantiate EC2 client.
 	 * @param awsCredentials of type AWSCredentials - AWSAccessKeyID and AWSSecretKey
-	 * @param region of type AWS Region e.g. - "ec2.us-west-1.amazonaws.com" for N. California
+	 * @param region of type AWS Region e.g. - "ec2.us-west-1.amazonaws.com" for Oregon
 	 */
 	public AmazonEC2Common(AWSCredentials awsCredentials) {
 		ec2 = new AmazonEC2Client(awsCredentials);
-		ec2.setEndpoint("ec2.us-west-1.amazonaws.com");
+		ec2.setEndpoint("ec2.us-west-2.amazonaws.com");
 	}
 
 	/**
 	 * create a security group to be attached to the new Management Server EC2 instance creation
-	 * 
+	 * @param securityGroupName
+	 * 								Name of security group
 	 */
-	public void createSecurityGroup() {
+	public void createSecurityGroup(String securityGroupName) {
 
 		CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest();
 
-		csgr.withGroupName("KubernetesSecGrp").withDescription("Security Group for Kubernetes Management Server");
+		csgr.withGroupName(securityGroupName).withDescription("Security Group for Kubernetes Management Server");
 		CreateSecurityGroupResult createSecurityGroupResult =
 				ec2.createSecurityGroup(csgr);
 		IpPermission ipPermission = new IpPermission();
 		ipPermission.withIpRanges("0.0.0.0/0").withFromPort(22).withToPort(22).withIpProtocol("tcp");
 		AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
 				new AuthorizeSecurityGroupIngressRequest();
-		authorizeSecurityGroupIngressRequest.withGroupName("KubernetesSecGrp")
+		authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
 		.withIpPermissions(ipPermission);
 		ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
 	}
 
 	/**
 	 * Creates a Key pair to SSH the Management Server
+	 * @param keyPairName
+	 * 							Name of key apir
 	 * @return Private Key to the user
 	 */
-
-	public void createEC2KeyPair() {
+	public String createEC2KeyPair(String keyPairName) {
 		CreateKeyPairRequest createKeyPairRequest = new CreateKeyPairRequest();
-		createKeyPairRequest.withKeyName("KubernetesKey");
+		createKeyPairRequest.withKeyName(keyPairName);
 		CreateKeyPairResult createKeyPairResult =
 				ec2.createKeyPair(createKeyPairRequest);
 		KeyPair keyPair = new KeyPair();
 		keyPair = createKeyPairResult.getKeyPair();
 		this.keyPair = keyPair;
-		System.out.println(this.keyPair);
+		
+		return keyPair.getKeyMaterial();
 	}
+
 
 	/**
 	 * Creates and launches Management Server on AWS
+	 * @param amiId
+	 * 							AMI id
 	 * @param instanceType
+	 * 							Instance type
+	 * @param iamName
+	 * 							Name of IAM role
+	 * @param securityGroupName
+	 * 							Name of securtiy group
+	 * @param keyPairName
+	 * 							Name of keypair 
 	 */
-	public void createEC2Instance(String instanceType) {
+	public void createEC2Instance(String amiId, String instanceType, String iamName, String securityGroupName, String keyPairName) {
 
-		RunInstancesRequest runInstancesRequest =
-			new RunInstancesRequest();
+		// create security group
+		createSecurityGroup(securityGroupName);
 		
-		runInstancesRequest.withImageId("ami-23e8a343")
+		RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
+		
+		runInstancesRequest.withImageId(amiId)
 			.withInstanceType(instanceType)
 			.withMinCount(1)
 			.withMaxCount(1)
-			.withKeyName("KubernetesKey")
-			.withSecurityGroups("KubernetesSecGrp")
-			.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(""));
+			.withKeyName(keyPairName)
+			.withSecurityGroups(securityGroupName)
+			.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamName));
 		
 		RunInstancesResult runInstancesResult =
 			      ec2.runInstances(runInstancesRequest);
+		
+		log.info("Created the instance with AMI ID - "+ amiId+". Launch time is: "+ LocalDateTime.now());
 	}
 
 	/**
@@ -190,5 +209,28 @@ public class AmazonEC2Common {
 		Date date = describeInstanceResult.getReservations().get(0).getInstances().get(0).getLaunchTime();		
 		return date.getTime();
 	}
+	
+	/**
+	 * Share an AMI with an user account
+	 * @param amiId
+	 * 					AMI id
+	 * @param userAccountId
+	 * 					AWS User Account Id to share with
+	 */
+	public void shareAMIAcrossAccounts(String amiId, String userAccountId){
+		
+		Collection<LaunchPermission> launchPermission = new ArrayList<LaunchPermission>();
+		launchPermission.add(new LaunchPermission().withUserId(userAccountId));
+		
+		LaunchPermissionModifications launchPermissionModifications = new LaunchPermissionModifications().withAdd(launchPermission);
+		
+		ModifyImageAttributeRequest modifyImageAttributeRequest = new ModifyImageAttributeRequest()
+		.withImageId(amiId).withLaunchPermission(launchPermissionModifications);
+		
+		ec2.modifyImageAttribute(modifyImageAttributeRequest);
+		
+		log.info("Shared AMI with ID - "+ amiId+" with user account ID - "+ userAccountId);
+	}
+	
 
 }
