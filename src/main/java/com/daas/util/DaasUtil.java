@@ -1,6 +1,7 @@
 package com.daas.util;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +47,24 @@ public class DaasUtil {
 		}
 	}
 
+	
+	/**
+	 * validation check for null path params, throws input invalid exception for null values
+	 * @param map
+	 * @throws InputInvalidException
+	 */
+	public static void checkForNull(Map<String,Object> map) throws Exception
+	{
+
+		String keys[] = map.keySet().toArray(new String[0]);
+		for(int i = 0 ; i < keys.length;++i)
+		{
+			if(map.get(keys[i]) == null){
+				logger.warn("Query parameter, "+keys[i]+" is null.");
+				throw new InputInvalidException(" No value for " + keys[i]);				
+			}
+		}
+	}
 
 	/**
 	 * Validate hex with regular expression

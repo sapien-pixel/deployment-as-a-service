@@ -8,6 +8,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 /**
  * Project Object
@@ -40,6 +41,31 @@ public class Project {
 
 	@Column(name="project_url")
 	private String project_url;
+
+	@Transient
+	private String cloud_access_key;
+
+	@Transient
+	private String cloud_secret_key;
+
+	@Transient
+	private String iam_admin_role;
+
+	@Transient
+	private String cloud_account_id;
+
+	@Transient
+	private String aws_key;
+
+	@Transient
+	private String master_size;
+
+	@Transient
+	private String node_size;
+
+	@Transient
+	private String node_numbers;
+
 
 	/**
 	 * @return the project_id
@@ -138,5 +164,118 @@ public class Project {
 	public void setProject_url(String project_url) {
 		this.project_url = project_url;
 	}
+
+	/**
+	 * @return the cloud_access_key
+	 */
+	public String getCloud_access_key() {
+		return cloud_access_key;
+	}
+
+	/**
+	 * @param cloud_access_key the cloud_access_key to set
+	 */
+	public void setCloud_access_key(String cloud_access_key) {
+		this.cloud_access_key = cloud_access_key;
+	}
+
+	/**
+	 * @return the cloud_secret_key
+	 */
+	public String getCloud_secret_key() {
+		return cloud_secret_key;
+	}
+
+	/**
+	 * @param cloud_secret_key the cloud_secret_key to set
+	 */
+	public void setCloud_secret_key(String cloud_secret_key) {
+		this.cloud_secret_key = cloud_secret_key;
+	}
+
+	/**
+	 * @return the iam_admin_role
+	 */
+	public String getIam_admin_role() {
+		return iam_admin_role;
+	}
+
+	/**
+	 * @param iam_admin_role the iam_admin_role to set
+	 */
+	public void setIam_admin_role(String iam_admin_role) {
+		this.iam_admin_role = iam_admin_role;
+	}
+
+	/**
+	 * @return the cloud_account_id
+	 */
+	public String getCloud_account_id() {
+		return cloud_account_id;
+	}
+
+	/**
+	 * @param cloud_account_id the cloud_account_id to set
+	 */
+	public void setCloud_account_id(String cloud_account_id) {
+		this.cloud_account_id = cloud_account_id;
+	}
+
+	/**
+	 * @return the aws_key
+	 */
+	public String getAws_key() {
+		return aws_key;
+	}
+
+	/**
+	 * @param aws_key the aws_key to set
+	 */
+	public void setAws_key(String aws_key) {
+		this.aws_key = aws_key;
+	}
+
+	/**
+	 * @return the master_size
+	 */
+	public String getMaster_size() {
+		return master_size;
+	}
+
+	/**
+	 * @param master_size the master_size to set
+	 */
+	public void setMaster_size(String master_size) {
+		this.master_size = master_size;
+	}
+
+	/**
+	 * @return the node_size
+	 */
+	public String getNode_size() {
+		return node_size;
+	}
+
+	/**
+	 * @param node_size the node_size to set
+	 */
+	public void setNode_size(String node_size) {
+		this.node_size = node_size;
+	}
+
+	/**
+	 * @return the node_numbers
+	 */
+	public String getNode_numbers() {
+		return node_numbers;
+	}
+
+	/**
+	 * @param node_numbers the node_numbers to set
+	 */
+	public void setNode_numbers(String node_numbers) {
+		this.node_numbers = node_numbers;
+	}
+
 
 }
