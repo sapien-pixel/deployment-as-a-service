@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
+import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.amazonaws.services.ec2.model.KeyPair;
@@ -141,8 +143,20 @@ public class AmazonEC2Common {
 		System.out.println(new String(Base64.encodeBase64(readFile("/cmd.sh").getBytes())));
 		RunInstancesResult runInstancesResult =
 			      ec2.runInstances(runInstancesRequest);
+
+		log.info("Created the instance with AMI ID - "+ amiId);
 		
-		log.info("Created the instance with AMI ID - "+ amiId+". Launch time is: "+ LocalDateTime.now());
+		Instance instance = runInstancesResult.getReservation().getInstances().get(0);		
+		Integer instanceState = -1;
+		
+		while(instanceState != 16) { //Loop until the instance is in the "running" state.
+			instanceState = getInstanceStatus(instance.getInstanceId());
+			try {
+				Thread.sleep(5000);
+			} catch(InterruptedException e) {}
+		}
+		log.info("Started the instance"+ instance.getInstanceId()+". Launch time is: "+ instance.getLaunchTime());
+		
 	}
 
 	/**
