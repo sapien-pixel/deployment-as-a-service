@@ -25,10 +25,14 @@ import com.daas.service.UserService;
 import com.daas.service.impl.ProjectServiceImpl;
 import com.daas.service.impl.UserServiceImpl;
 import com.daas.util.DaasUtil;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 
 
 @Path("/project")
 public class ProjectResource {
+	
+	static HashFunction hf = Hashing.md5();
 
 	private static UserService userService = new UserServiceImpl();
 
@@ -65,6 +69,10 @@ public class ProjectResource {
 		if(!iam.checkIAMRole(project.getIam_admin_role()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid IAM role name").build();
 
+		// generate project ID
+		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(Long.valueOf(user_id)).hash().toString());
+		
+		
 		// check if this is User's first project
 		// If it is first project, create EC2 Kube MS first
 		// if not. start another kubernetes container
@@ -77,6 +85,9 @@ public class ProjectResource {
 			project = createFirstProject(project);			
 			
 		}
+		
+		
+		
 		else{
 			
 			

@@ -20,6 +20,7 @@
 		<hibernate.version>5.2.3.Final</hibernate.version>
 		<postgresql.version>9.1-901.jdbc4</postgresql.version>
 		<jbcrypt.version>0.3m</jbcrypt.version>
+		<guava.version>20.0</guava.version>
 	</properties>
 
 	<repositories>
@@ -107,6 +108,11 @@
 			<groupId>org.mindrot</groupId>
 			<artifactId>jbcrypt</artifactId>
 			<version>${jbcrypt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>${guava.version}</version>
 		</dependency>
 
 

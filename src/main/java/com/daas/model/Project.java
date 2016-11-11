@@ -2,8 +2,6 @@ package com.daas.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -20,7 +18,7 @@ public class Project {
 
 	@Id
 	@Column(name="project_id")
-	private long project_id;
+	private String project_id;
 
 	@Column(name="projectName")
 	private String projectName;
@@ -69,14 +67,14 @@ public class Project {
 	/**
 	 * @return the project_id
 	 */
-	public long getProject_id() {
+	public String getProject_id() {
 		return project_id;
 	}
 
 	/**
 	 * @param project_id the project_id to set
 	 */
-	public void setProject_id(long project_id) {
+	public void setProject_id(String project_id) {
 		this.project_id = project_id;
 	}
 
