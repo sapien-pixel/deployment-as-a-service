@@ -31,7 +31,7 @@ public class ProjectDAOImpl implements ProjectDAO {
 	}
 
 	@Override
-	public Project read(long id) {
+	public Project read(String id) {
 
 		Session session = SessionUtil.getSession();
 		Transaction tx =  session.beginTransaction();

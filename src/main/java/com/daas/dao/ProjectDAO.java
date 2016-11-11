@@ -22,7 +22,7 @@ public interface ProjectDAO {
 	 * 				Project id
 	 * @return {@link Project}
 	 */
-	public Project read(long id);
+	public Project read(String id);
 	
 	/**
 	 * update a Project

@@ -1,5 +1,6 @@
 package com.daas.resource;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,7 +119,7 @@ public class ProjectResource {
 	@GET
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getProject(@PathParam("id") long id){
+	public Response getProject(@PathParam("id") String id){
 
 		Project project = projectService.read(id);
 
@@ -157,7 +158,7 @@ public class ProjectResource {
 	}
 
 
-	public static Project createFirstProject(Project project){
+	public static Project createFirstProject(Project project) throws IOException{
 
 		// share Kube common AMI with User's AWS account
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));

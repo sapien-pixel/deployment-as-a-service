@@ -21,7 +21,7 @@ public class ProjectServiceImpl implements ProjectService{
 	}
 
 	@Override
-	public Project read(long id) {
+	public Project read(String id) {
 
 		return projectDAO.read(id);
 	}
@@ -46,7 +46,7 @@ public class ProjectServiceImpl implements ProjectService{
 	}
 
 	@Override
-	public boolean projectExists(long id) {
+	public boolean projectExists(String id) {
 
 		Project valid_project = projectDAO.read(id);
 
