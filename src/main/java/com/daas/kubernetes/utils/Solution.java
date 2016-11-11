@@ -7,17 +7,37 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.net.SocketFactory;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.SSLSession;
+import java.security.cert.*;
 
 import com.daas.common.ConfFactory;
 
 public class Solution {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, KeyManagementException, NoSuchAlgorithmException {
+		
 		String ipAddr = ConfFactory.getConf().getString("kube.master.ip");
 		String port = ConfFactory.getConf().getString("kube.master.port");
+		
+		SocketFactory factory = SSLSocketFactory.getDefault();
+		SSLSocket socket = (SSLSocket) factory.createSocket("35.161.227.115", 443);
+		socket.startHandshake();
+		Certificate[] certs = socket.getSession().getPeerCertificates();
+		System.out.println(certs[0]);
+		
 		String URI = "https://" + ipAddr+ ":" + port;
 		Config config = new ConfigBuilder().withMasterUrl(URI)
-				.withTrustCerts(true)			          
+				.withTrustCerts(false)			          
 				.withUsername(ConfFactory.getConf().getString("kube.master.userName"))
 				.withPassword(ConfFactory.getConf().getString("kube.master.password"))
 				.build();

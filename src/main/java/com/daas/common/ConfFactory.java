@@ -23,5 +23,10 @@ public class ConfFactory {
 		return config;
 	}
 	
+	public static Config getShellConfigEC2() {
+		
+		Config config = ConfigFactory.load("cmd.sh");		
+		return config;
+	}
 	
 }

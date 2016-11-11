@@ -1,5 +1,7 @@
 package com.daas.aws.common.test;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -9,7 +11,7 @@ import com.daas.common.ConfFactory;
 public class AmazonEC2CommonTest {
 
 	@Test
-	public void createSecurityGroupTest() {
+	public void createSecurityGroupTest() throws IOException {
 
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("dhruv.aws.accessId"), ConfFactory.getPrivateConf().getString("dhruv.aws.secretKey")));
 
