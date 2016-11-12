@@ -2,7 +2,6 @@ package com.daas.resource;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
@@ -33,7 +32,7 @@ import com.google.common.hash.Hashing;
 
 @Path("/project")
 public class ProjectResource {
-	
+
 	static HashFunction hf = Hashing.md5();
 
 	private static UserService userService = new UserServiceImpl();
@@ -56,7 +55,7 @@ public class ProjectResource {
 		// check if valid user
 		if(!userService.userExists(Long.valueOf(user_id)))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
-			
+
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("cloud_access_key", project.getCloud_access_key());
@@ -72,23 +71,27 @@ public class ProjectResource {
 
 		// generate project ID
 		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(Long.valueOf(user_id)).hash().toString());
-		
-		
+
+
 		// check if this is User's first project
 		// If it is first project, create EC2 Kube MS first
 		// if not. start another kubernetes container
 
 		// first project
 		User user = userService.read(Long.valueOf(user_id));
+
+		String key = null;
 		if(user.getManagementEC2InstanceId() == null) {
+			// create keypair
+			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+			key = ec2.createEC2KeyPair(keypairName);
 			project = createFirstProject(project,user_id);
 		}
-		
-		
+
 		else{
-			
+
 			// Modify instance request - EC2 for 2nd project
-			
+
 		}
 
 		project.setUser_id(userService.read(Long.valueOf(user_id)));
@@ -101,7 +104,8 @@ public class ProjectResource {
 		project.setCloud_secret_key(null);
 		project.setIam_admin_role(null);
 
-		return Response.ok("Succesfully added Project").entity(project).build();		
+		// send keyPair in header, send null if not first project
+		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
 	}
 
 
@@ -142,7 +146,7 @@ public class ProjectResource {
 
 		if(project==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
-		
+
 		return Response.ok("Succesfully deleted Project").entity(project).build();
 	}
 
@@ -154,16 +158,13 @@ public class ProjectResource {
 		ec2.shareAMIAcrossAccounts(amiId, project.getCloud_account_id());		
 
 		// create EC2 Kube Management server on User's AWS account
-		ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-		String key = ec2.createEC2KeyPair(keypairName);
-		project.setAws_key(key);
 		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), userId);
-		
+
 		// Setting the Instance ID for User
 		User user = userService.read(Long.parseLong(userId));
 		user.setManagementEC2InstanceId(instanceId);
 		userService.update(user);
-		
+
 		return project;
 	}
 

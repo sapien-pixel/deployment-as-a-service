@@ -52,9 +52,6 @@ public class Project {
 	private String cloud_account_id;
 
 	@Transient
-	private String aws_key;
-
-	@Transient
 	private String master_size;
 
 	@Transient
@@ -216,20 +213,6 @@ public class Project {
 	 */
 	public void setCloud_account_id(String cloud_account_id) {
 		this.cloud_account_id = cloud_account_id;
-	}
-
-	/**
-	 * @return the aws_key
-	 */
-	public String getAws_key() {
-		return aws_key;
-	}
-
-	/**
-	 * @param aws_key the aws_key to set
-	 */
-	public void setAws_key(String aws_key) {
-		this.aws_key = aws_key;
 	}
 
 	/**
