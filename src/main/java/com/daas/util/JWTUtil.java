@@ -10,6 +10,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
+import com.daas.common.ConfFactory;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
@@ -23,13 +25,12 @@ import io.jsonwebtoken.SignatureException;
  */
 public class JWTUtil {
 
-	static String encodedKey;	
-	static boolean keyGenerated = false;
 
 	/**
 	 * Generate secret Signing Key
+	 * Write this to jwt.secret.key file
 	 */
-	private	static void generateKey(){
+	public static void generateKey(){
 
 		// create new key
 		SecretKey secretKey = null;
@@ -39,8 +40,8 @@ public class JWTUtil {
 			e.printStackTrace();
 		}
 		// get base64 encoded version of the key
-		encodedKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());
-		keyGenerated = true;
+		String encodedKey = Base64.getEncoder().encodeToString(secretKey.getEncoded());		
+		System.out.println(encodedKey);
 	}
 
 	/**
@@ -49,11 +50,7 @@ public class JWTUtil {
 	 */
 	public String getKey(){
 
-		if(!keyGenerated)
-			return null;
-
-		return encodedKey;
-
+		return ConfFactory.getConf().getString("jwt.secret.key");
 	}
 
 
@@ -79,9 +76,7 @@ public class JWTUtil {
 		long nowMillis = System.currentTimeMillis();
 		Date now = new Date(nowMillis);
 
-		//Sign our JWT with our ApiKey secret		
-		if(!keyGenerated)
-			return null;
+		//Sign our JWT with our ApiKey secret
 		
 		byte[] apiKeySecretBytes = DatatypeConverter.parseBase64Binary(getKey());
 		Key signingKey = new SecretKeySpec(apiKeySecretBytes, signatureAlgorithm.getJcaName());

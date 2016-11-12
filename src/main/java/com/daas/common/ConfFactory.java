@@ -23,9 +23,9 @@ public class ConfFactory {
 		return config;
 	}
 	
-	public static Config getShellConfigEC2() {
+	public static Config getJWTSecretKey() {
 		
-		Config config = ConfigFactory.load("cmd.sh");		
+		Config config = ConfigFactory.load("jwt.secret.key");		
 		return config;
 	}
 	
