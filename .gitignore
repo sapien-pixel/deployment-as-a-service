@@ -1,21 +1,36 @@
-*.class
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
+**.class
 
 # Package Files #
-*.jar
-*.war
-*.ear
+**.jar
+**.war
+**.deb
+**.ear
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+# virtual machine crash logs
+**/hs_err_pid*
 
 # remove target folder
-target/
+**/target/
+
+# Others
+**/.metadata
+**/.DS_Store
+**/.classpath
+**/.project
+**/.settings
+**/logs
+**/log
+**/bin
+
+**/build
+**/version.prop
+**.iml
+**/.idea
+
 
 # hibernate props file
 src/main/resources/hibernate.properties
 
 # aws creds file
 src/main/resources/awsCreds.properties
+/target

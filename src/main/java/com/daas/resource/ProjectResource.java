@@ -108,7 +108,7 @@ public class ProjectResource {
 	@GET
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getProject(@PathParam("id") long id){
+	public Response getProject(@PathParam("id") String id){
 
 		Project project = projectService.read(id);
 

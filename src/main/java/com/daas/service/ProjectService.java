@@ -22,7 +22,7 @@ public interface ProjectService {
 	 * 				Project id
 	 * @return {@link Project}
 	 */
-	public Project read(long id);
+	public Project read(String id);
 	
 	/**
 	 * update a Project
@@ -47,6 +47,6 @@ public interface ProjectService {
 	 * @return true, if exists
 	 * false, if not
 	 */
-	public boolean projectExists(long id);
+	public boolean projectExists(String id);
 	
 }
