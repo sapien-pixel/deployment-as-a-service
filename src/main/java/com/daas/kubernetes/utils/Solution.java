@@ -41,7 +41,7 @@ public class Solution {
 				.withUsername(ConfFactory.getConf().getString("kube.master.userName"))
 				.withPassword(ConfFactory.getConf().getString("kube.master.password"))
 				.build();
-		KubernetesClient kubernetesClient = new DefaultKubernetesClient(config);  
+		KubernetesClient kubernetesClient = new DefaultKubernetesClient(config);
 		System.out.println(kubernetesClient.services().get().getAdditionalProperties());	
 		PodList pods = kubernetesClient.pods().list();
 		for (Pod pod : pods.getItems()) {

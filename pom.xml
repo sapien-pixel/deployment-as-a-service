@@ -21,6 +21,7 @@
 		<postgresql.version>9.1-901.jdbc4</postgresql.version>
 		<jbcrypt.version>0.3m</jbcrypt.version>
 		<guava.version>20.0</guava.version>
+		<jcabi.version>1.5.2</jcabi.version>
 	</properties>
 
 	<repositories>
@@ -114,7 +115,10 @@
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
 		</dependency>
-
-
+		<dependency>
+			<groupId>com.jcabi</groupId>
+			<artifactId>jcabi-ssh</artifactId>
+			<version>${jcabi.version}</version>
+		</dependency>
 	</dependencies>
 </project>

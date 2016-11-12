@@ -14,12 +14,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.binary.Base64;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.services.devicefarm.model.Project;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
@@ -116,21 +118,12 @@ public class AmazonEC2Common {
 	 * 							Name of keypair 
 	 * @throws IOException 
 	 */
-	public void createEC2Instance(String amiId, String instanceType, String iamName, String securityGroupName, String keyPairName) throws IOException {
+	public String createEC2Instance(String amiId, String instanceType, String iamName, String securityGroupName, String keyPairName, String projectId, String userId) throws IOException {
 
 		// create security group
 		createSecurityGroup(securityGroupName);
 		
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
-		
-		
-		
-		Path path = Paths.get("/cmd.sh");
-		Charset charset = StandardCharsets.UTF_8;
-		String content = new String(Files.readAllBytes(path), charset);
-		content.replaceAll("$USER_ID","");
-		
-		
 		
 		runInstancesRequest.withImageId(amiId)
 			.withInstanceType(instanceType)
@@ -138,12 +131,12 @@ public class AmazonEC2Common {
 			.withMaxCount(1)
 			.withKeyName(keyPairName)
 			.withSecurityGroups(securityGroupName)
-			.withUserData(new String(Base64.encodeBase64(readFile("/cmd.sh").getBytes())))
+			.withUserData(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())))
 			.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamName));
-		System.out.println(new String(Base64.encodeBase64(readFile("/cmd.sh").getBytes())));
+		System.out.println(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())));
 		RunInstancesResult runInstancesResult =
 			      ec2.runInstances(runInstancesRequest);
-
+		
 		log.info("Created the instance with AMI ID - "+ amiId);
 		
 		Instance instance = runInstancesResult.getReservation().getInstances().get(0);		
@@ -155,8 +148,18 @@ public class AmazonEC2Common {
 				Thread.sleep(5000);
 			} catch(InterruptedException e) {}
 		}
-		log.info("Started the instance"+ instance.getInstanceId()+". Launch time is: "+ instance.getLaunchTime());
 		
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {}
+		
+		DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instance.getInstanceId());
+		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
+		String ip = describeInstanceResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress();
+		
+		log.info("Started the instance"+ instance.getInstanceId()+". Launch time is: "+ instance.getLaunchTime());
+		log.info("Public IP address is -> " + ip);
+		return ip;
 	}
 
 	/**
@@ -266,8 +269,9 @@ public class AmazonEC2Common {
 		log.info("Shared AMI with ID - "+ amiId+" with user account ID - "+ userAccountId);
 	}
 	
-	public  String readFile(String fileName) throws IOException {
+	public  String readFile(String fileName, String projectId, String userId) throws IOException {
 	    BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(fileName)));
+	    
 	    try {
 	        StringBuilder sb = new StringBuilder();
 	        String line = br.readLine();
@@ -277,7 +281,10 @@ public class AmazonEC2Common {
 	            sb.append("\n");
 	            line = br.readLine();
 	        }
-	        return sb.toString();
+	        String content = sb.toString();
+	        content = content.replace("userid",userId);
+	        content = content.replace("projectid",projectId);
+	        return content;
 	    } finally {
 	        br.close();
 	    }

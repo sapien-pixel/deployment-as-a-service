@@ -1,5 +1,6 @@
 package com.daas.resource;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
 import com.daas.common.ConfFactory;
 import com.daas.model.Project;
+import com.daas.model.User;
 import com.daas.service.ProjectService;
 import com.daas.service.UserService;
 import com.daas.service.impl.ProjectServiceImpl;
@@ -42,7 +44,6 @@ public class ProjectResource {
 	static String instanceType = ConfFactory.getConf().getString("ec2.kubeMS.instanceType");
 	static String securityGroupName = ConfFactory.getConf().getString("ec2.security.groupName");
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
-
 
 	@POST
 	@Path("/add/{user_id}")
@@ -77,29 +78,18 @@ public class ProjectResource {
 		// If it is first project, create EC2 Kube MS first
 		// if not. start another kubernetes container
 
-		List<Project> projects = userService.getAllProjects(Long.valueOf(user_id));
-		
 		// first project
-		if(projects.size()==0){
-
-			project = createFirstProject(project);			
-			
+		User user = userService.read(Long.valueOf(user_id));
+		if(user.getManagementEC2InstanceId() == null) {
+			project = createFirstProject(project,user_id);
 		}
-		
 		
 		
 		else{
 			
-			
+			// Modify instance request - EC2 for 2nd project
 			
 		}
-		
-		// create Kube cluster 
-
-
-
-		// update User with MS url or instance ID?
-
 
 		project.setUser_id(userService.read(Long.valueOf(user_id)));
 		project.setDateCreated(System.currentTimeMillis());
@@ -152,12 +142,12 @@ public class ProjectResource {
 
 		if(project==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
-
+		
 		return Response.ok("Succesfully deleted Project").entity(project).build();
 	}
 
 
-	public static Project createFirstProject(Project project){
+	public static Project createFirstProject(Project project, String userId) throws IOException{
 
 		// share Kube common AMI with User's AWS account
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
@@ -167,8 +157,13 @@ public class ProjectResource {
 		ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		String key = ec2.createEC2KeyPair(keypairName);
 		project.setAws_key(key);
-		ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName);
-
+		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), userId);
+		
+		// Setting the Instance ID for User
+		User user = userService.read(Long.parseLong(userId));
+		user.setManagementEC2InstanceId(instanceId);
+		userService.update(user);
+		
 		return project;
 	}
 

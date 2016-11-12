@@ -40,9 +40,9 @@ public class User {
 	@Column(name="dateRegistered")
 	private long dateRegistered;
 	
-	@Column(name="managementServerURL")
-	private String managementServerURL; 
-	
+	@Column(name="managementEC2InstanceId")
+	private String managementEC2InstanceId; 
+
 	/**
 	 * @return the user_id
 	 */
@@ -141,11 +141,12 @@ public class User {
 		this.dateRegistered = dateRegistered;
 	}
 	
-	public String getManagementServerURL() {
-		return managementServerURL;
+	public String getManagementEC2InstanceId() {
+		return managementEC2InstanceId;
 	}
 
-	public void setManagementServerURL(String managementServerURL) {
-		this.managementServerURL = managementServerURL;
+	public void setManagementEC2InstanceId(String managementEC2InstanceId) {
+		this.managementEC2InstanceId = managementEC2InstanceId;
 	}
+	
 }
