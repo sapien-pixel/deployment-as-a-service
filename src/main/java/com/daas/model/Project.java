@@ -46,9 +46,6 @@ public class Project {
 	private String cloud_secret_key;
 
 	@Transient
-	private String iam_admin_role;
-
-	@Transient
 	private String Aws_key;
 	
 	@Transient
@@ -185,20 +182,6 @@ public class Project {
 	 */
 	public void setCloud_secret_key(String cloud_secret_key) {
 		this.cloud_secret_key = cloud_secret_key;
-	}
-
-	/**
-	 * @return the iam_admin_role
-	 */
-	public String getIam_admin_role() {
-		return iam_admin_role;
-	}
-
-	/**
-	 * @param iam_admin_role the iam_admin_role to set
-	 */
-	public void setIam_admin_role(String iam_admin_role) {
-		this.iam_admin_role = iam_admin_role;
 	}
 
 	/**

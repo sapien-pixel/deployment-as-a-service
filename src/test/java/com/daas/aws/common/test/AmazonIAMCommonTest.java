@@ -17,4 +17,13 @@ public class AmazonIAMCommonTest {
 		Assert.assertTrue("Not Exists", iam.checkIAMRole("kubernetes"));
 	}
 	
+	@Test
+	public void createAdminAccessIAM(){
+		
+		AmazonIAMCommon iam = new AmazonIAMCommon(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
+		
+		iam.createAdminAccessIAMRole("DaaSRole");
+		
+	}
+	
 }

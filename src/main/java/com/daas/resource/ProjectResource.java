@@ -48,7 +48,8 @@ public class ProjectResource {
 	static String instanceType = ConfFactory.getConf().getString("ec2.kubeMS.instanceType");
 	static String securityGroupName = ConfFactory.getConf().getString("ec2.security.groupName");
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
-
+	static String iamRoleName = ConfFactory.getConf().getString("iam.role.admin");
+	
 	@POST
 	@Path("/add/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -69,18 +70,16 @@ public class ProjectResource {
 		if(!userService.userExists(user_id))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
 
-
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("cloud_access_key", project.getCloud_access_key());
 		map.put("cloud_secret_key", project.getCloud_secret_key());
-		map.put("iam_admin_role", project.getIam_admin_role());
 		DaasUtil.checkForNull(map);
 
-		// check if IAM role exists
+		// create IAM role
 		AmazonIAMCommon iam = new AmazonIAMCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-		if(!iam.checkIAMRole(project.getIam_admin_role()))
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid IAM role name").build();
+		if(!iam.createAdminAccessIAMRole(iamRoleName))	
+			return Response.status(Response.Status.BAD_REQUEST).entity("Problem creating IAM role").build();
 
 		// generate project ID
 		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(user_id).hash().toString());
@@ -110,7 +109,6 @@ public class ProjectResource {
 		// set keys null
 		project.setCloud_access_key(null);
 		project.setCloud_secret_key(null);
-		project.setIam_admin_role(null);
 
 		// send keyPair in header, send null if not first project
 		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
@@ -207,7 +205,7 @@ public class ProjectResource {
 		String key = ec2.createEC2KeyPair(keypairName);
 		project.setAws_key(key);
 		
-		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
+		String instanceId = ec2.createEC2Instance(amiId, instanceType, iamRoleName, securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
 		
 		// Create Kubernetes Cluster
 		ec2.createCluster(project,instanceId, key);
