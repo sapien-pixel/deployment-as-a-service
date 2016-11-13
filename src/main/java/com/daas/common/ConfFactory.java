@@ -23,10 +23,4 @@ public class ConfFactory {
 		return config;
 	}
 	
-	public static Config getJWTSecretKey() {
-		
-		Config config = ConfigFactory.load("jwt.secret.key");		
-		return config;
-	}
-	
 }
