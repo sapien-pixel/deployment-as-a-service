@@ -1,5 +1,11 @@
 package com.daas.util;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.SignatureException;
+
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -11,12 +17,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import com.daas.common.ConfFactory;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtBuilder;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SignatureException;
 
 /**
  * Utility class to implement JWT
@@ -48,9 +48,9 @@ public class JWTUtil {
 	 * Get signed key, if generated
 	 * @return secret key
 	 */
-	public String getKey(){
+	public static String getKey(){
 
-		return ConfFactory.getConf().getString("jwt.secret.key");
+		return ConfFactory.getPrivateConf().getString("jwt.secret.key");
 	}
 
 
@@ -68,7 +68,7 @@ public class JWTUtil {
 	 * 						Token expiry		
 	 * @return JWT in compacted form
 	 */
-	private String createJWT(String id, String issuer, String subject, long ttlMillis) {
+	public static String createJWT(String id, String issuer, String subject, long ttlMillis) {
 
 		//The JWT signature algorithm used to sign the token
 		SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
@@ -77,7 +77,7 @@ public class JWTUtil {
 		Date now = new Date(nowMillis);
 
 		//Sign our JWT with our ApiKey secret
-		
+
 		byte[] apiKeySecretBytes = DatatypeConverter.parseBase64Binary(getKey());
 		Key signingKey = new SecretKeySpec(apiKeySecretBytes, signatureAlgorithm.getJcaName());
 
@@ -101,33 +101,25 @@ public class JWTUtil {
 
 
 	/**
-	 * Decoding and validating the token
+	 *	Decoding and validating the token
 	 * @param jwt
 	 * 				JWT token to validate
 	 * @return true if valid, false if not.
 	 */
-	private boolean parseJWT(String jwt) {
+	public static boolean parseJWT(String jwt) {
 
 		try{
 			//This will throw an exception if it is not a signed JWS (as expected)
-			Claims claims = Jwts.parser()         
+			Claims claims = Jwts.parser()
 					.setSigningKey(DatatypeConverter.parseBase64Binary(getKey()))
 					.parseClaimsJws(jwt).getBody();
-
-			// checks for claims??
-			
-			System.out.println("ID: " + claims.getId());
-			System.out.println("Subject: " + claims.getSubject());
-			System.out.println("Issuer: " + claims.getIssuer());
-			System.out.println("Expiration: " + claims.getExpiration());
 
 		} catch (SignatureException e) {
 			//don't trust the JWT!
 			return false;
 		}
-		
 		return true;
-		
+
 	}
 
 }

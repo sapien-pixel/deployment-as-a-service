@@ -1,7 +1,6 @@
 package com.daas.aws.common;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.UnknownHostException;
@@ -16,16 +15,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import javafx.scene.transform.Shear;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.codec.binary.Base64;
 
 import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.services.devicefarm.model.Project;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2Client;
 import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
@@ -57,6 +52,9 @@ import com.daas.common.ConfFactory;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 import com.daas.model.*;
+
+
+
 /**
  * Base class for common EC2 activities(create, start, stop, getStatus, getLaunchTime)
  * @author vmaheshwari

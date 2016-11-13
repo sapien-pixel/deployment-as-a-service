@@ -1,8 +1,10 @@
 package com.daas.resource;
 
+import java.util.Calendar;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -10,101 +12,167 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
+import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
 import com.daas.model.User;
 import com.daas.service.UserService;
 import com.daas.service.impl.UserServiceImpl;
 import com.daas.util.DaasUtil;
+import com.daas.util.JWTUtil;
 
 @Path("/user")
 public class UserResource {
 
 	private static UserService userService = new UserServiceImpl();
 
-	
+
 	@POST
 	@Path("/signup")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response addUser(User user) throws Exception {
-		
+	public Response signup(User user) throws Exception {
+
+		//set managementEC2InstanceId as temp to avoid Input Invalid Exception
+		user.setManagementEC2InstanceId(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID);
 		// check for null values
 		DaasUtil.checkForNull(user);
-		
+
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
-		
+
 		user.setDateRegistered(System.currentTimeMillis());		
 		user = userService.create(user);
 		user.setPassword(null);
 		return Response.ok("Succesfully added User").entity(user).build();
 	}
-	
-	
-	@GET
+
+
+	@POST
 	@Path("/login")
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response getUser(User user){
-		
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response login(User user){
+
 		user = userService.validateUser(user);
-		
+
 		if(user==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid credentials").build();
-		
+
 		user.setPassword(null);
-		return Response.ok("Succesfully logged in.").entity(user).build();	
+
+		// get a JWT token
+		Cookie cookie = new Cookie("daas-token", JWTUtil.createJWT(String.valueOf(user.getUser_id()), DaaSConstants.JWT_ISSUER, user.getEmail(), -1));
+		Calendar cal = Calendar.getInstance();
+		cal.add(Calendar.YEAR, 1);				// set cookie expiry to 1 year
+
+		// get cookie
+		NewCookie newCookie = new NewCookie(cookie, "", 315360000, cal.getTime(), false, true);
+		return Response.ok("Succesfully logged in.").cookie(newCookie).entity(user).build();	
 	}
-	
-	
+
+
 	@PUT
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response updateUser(User user){
-		
-		// check for null values?
-		
+	public Response updateUser(@CookieParam("daas-token") Cookie cookie, User user){
+
+		if (cookie == null) {
+			return Response.serverError().entity("ERROR").build();
+		}
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);	
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+
+		if(user==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
+
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
-		
+
 		user = userService.update(user);
-		
+
 		if(user==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid user").build();
-		
+
 		user.setPassword(null);
 		return Response.ok("Succesfully updated User info").entity(user).build();
 	}
-	
-	
+
+
 	@DELETE
 	@Path("/delete")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response deleteUser(User user){
-						
-		user = userService.delete(user);
+	public Response deleteUser(@CookieParam("daas-token") Cookie cookie, User user){
+
+		if (cookie == null) {
+			return Response.serverError().entity("ERROR").build();
+		}
 		
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);	
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+
+		if(user==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
+
+		user = userService.delete(user);
+
 		if(user==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid user").build();
-		
+
 		user.setPassword(null);
 		return Response.ok("Succesfully deleted User").entity(user).build();
 	}
-	
-	
+
+	@GET
+	@Path("/logout")
+	@Produces(MediaType.TEXT_PLAIN)
+	public Response logout(@CookieParam("daas-token") Cookie cookie) {
+
+		// This removes the cookie in the browser.
+		if (cookie != null) {
+			NewCookie newCookie = new NewCookie(cookie, null, 0, false);
+			return Response.ok("Succesfully logout").cookie(newCookie).build();
+		}
+
+		return Response.ok("OK - No session").build();
+	}
+
+
 	@GET
 	@Path("/{user_id}/projects")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response getAllProjects(@PathParam("user_id") long user_id){
-				
-		// check for null values
-		
+	public Response getAllProjects(@CookieParam("daas-token") Cookie cookie, @PathParam("user_id") long user_id){
+
+		if (cookie == null) {
+			return Response.serverError().entity("ERROR").build();
+		}
+
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+
+		User user = userService.read(user_id);
+		if(user==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
+
 		List<Project> projects = userService.getAllProjects(user_id);
-		
+
 		if(projects == null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid user id").build();
-		
+
 		return Response.ok("Success").entity(projects).build();		
 	}
 }
