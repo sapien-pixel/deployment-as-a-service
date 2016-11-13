@@ -18,10 +18,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
+import com.daas.aws.common.AmazonSTSCommon;
 import com.daas.common.ConfFactory;
 import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
@@ -76,7 +75,6 @@ public class ProjectResource {
 		map.put("cloud_access_key", project.getCloud_access_key());
 		map.put("cloud_secret_key", project.getCloud_secret_key());
 		map.put("iam_admin_role", project.getIam_admin_role());
-		map.put("cloud_account_id", project.getCloud_account_id());
 		DaasUtil.checkForNull(map);
 
 		// check if IAM role exists
@@ -111,7 +109,6 @@ public class ProjectResource {
 
 		// set keys null
 		project.setCloud_access_key(null);
-		project.setCloud_account_id(null);
 		project.setCloud_secret_key(null);
 		project.setIam_admin_role(null);
 
@@ -200,11 +197,12 @@ public class ProjectResource {
 	public static synchronized Project createFirstProject(Project project, Long userId) throws IOException{
 
 		// share Kube common AMI with User's AWS account
+		AmazonSTSCommon sts = new AmazonSTSCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+		String userAccountId = sts.getUserAWSAccountId();
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
-		ec2.shareAMIAcrossAccounts(amiId, project.getCloud_account_id());		
+		ec2.shareAMIAcrossAccounts(amiId, userAccountId);		
 
 		// create EC2 Kube Management server on User's AWS account
-
 		ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		String key = ec2.createEC2KeyPair(keypairName);
 		project.setAws_key(key);

@@ -14,7 +14,6 @@ public class ProjectResourceTest {
 		Project project = new Project();
 		project.setCloud_access_key("AKIAIGVSMFWKLGICFCMA");
 		project.setCloud_secret_key("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");
-		project.setCloud_account_id("022487948790");
 		project.setIam_admin_role("kubernetes");
 		project.setProject_id("kubePrj-1");
 		project.setMaster_size("t2.micro");
