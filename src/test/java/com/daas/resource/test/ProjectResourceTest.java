@@ -27,7 +27,7 @@ public class ProjectResourceTest {
 		project.setUser_id(usr);
 		
 		try {
-			ProjectResource.createFirstProject(project,"1");
+			ProjectResource.createFirstProject(project,1L);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

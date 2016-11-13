@@ -22,7 +22,7 @@ import java.security.cert.*;
 
 import com.daas.common.ConfFactory;
 
-public class FetchKubet {
+public class Solution {
 
 	public static void main(String[] args) throws IOException, KeyManagementException, NoSuchAlgorithmException {
 		
@@ -30,7 +30,7 @@ public class FetchKubet {
 		String port = ConfFactory.getConf().getString("kube.master.port");
 		String URI = "https://" + ipAddr+ ":" + port;
 		
-		CertificateUtils.trustEveryone(URI);
+		CertificateUtils.trustEveryone(URI, "project_ID");
 
 		Config config = new ConfigBuilder().withMasterUrl(URI)
 				.withTrustCerts(false)			          
