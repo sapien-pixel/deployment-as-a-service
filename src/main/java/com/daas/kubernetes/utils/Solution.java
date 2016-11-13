@@ -22,20 +22,16 @@ import java.security.cert.*;
 
 import com.daas.common.ConfFactory;
 
-public class Solution {
+public class FetchKubet {
 
 	public static void main(String[] args) throws IOException, KeyManagementException, NoSuchAlgorithmException {
 		
 		String ipAddr = ConfFactory.getConf().getString("kube.master.ip");
 		String port = ConfFactory.getConf().getString("kube.master.port");
-		
-		SocketFactory factory = SSLSocketFactory.getDefault();
-		SSLSocket socket = (SSLSocket) factory.createSocket("35.161.227.115", 443);
-		socket.startHandshake();
-		Certificate[] certs = socket.getSession().getPeerCertificates();
-		System.out.println(certs[0]);
-		
 		String URI = "https://" + ipAddr+ ":" + port;
+		
+		CertificateUtils.trustEveryone(URI);
+
 		Config config = new ConfigBuilder().withMasterUrl(URI)
 				.withTrustCerts(false)			          
 				.withUsername(ConfFactory.getConf().getString("kube.master.userName"))

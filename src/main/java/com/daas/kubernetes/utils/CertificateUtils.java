@@ -27,10 +27,18 @@ import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.codec.binary.Base64;
 
+/**
+ * Utility class to Trust any self signed SSL certificate
+ * @author dhruvkalaria
+ *
+ */
+
 public class CertificateUtils {
-	public static void trustEveryone() { 
+
+	// Overides the Java client to trust any certificate
+	public static void trustEveryone(String urlString, String projectid) { 
 		try { 	
-			URL url = new URL("https://35.161.227.115");
+			URL url = new URL(urlString);
 			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){ 
 				public boolean verify(String hostname, SSLSession session) { 
 					return true; 
@@ -47,12 +55,13 @@ public class CertificateUtils {
 			HttpsURLConnection.setDefaultSSLSocketFactory( 
 					context.getSocketFactory()); 
 			HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
-			print_https_cert(con);
+			fetchSSLCertificate(con, projectid);
 		} catch (Exception e) { 
 			e.printStackTrace(); 
 		} 
 	}
 
+	// Reads the File and returns as a byte[] in form of InputStream
 	private static InputStream fullStream ( String fname ) throws IOException {
 		FileInputStream fis = new FileInputStream(fname);
 		DataInputStream dis = new DataInputStream(fis);
@@ -62,14 +71,12 @@ public class CertificateUtils {
 		return bais;
 	}
 
-	public static void print_https_cert(HttpsURLConnection con) throws KeyStoreException, NoSuchAlgorithmException, CertificateException{
+	// Fetch the SSL certificate from the server and add to CACERTS Keystore
+	public static synchronized void fetchSSLCertificate(HttpsURLConnection con, String projectid) throws KeyStoreException, NoSuchAlgorithmException, CertificateException{
 
 		if(con!=null){
 
 			try {
-				System.out.println("Response Code : " + con.getResponseCode());
-				System.out.println("Cipher Suite : " + con.getCipherSuite());
-				System.out.println("\n");
 
 				Certificate[] certs = con.getServerCertificates();
 				for(Certificate cert : certs){
@@ -94,14 +101,13 @@ public class CertificateUtils {
 					KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
 					keystore.load(is, "changeit".toCharArray());
 
-					String alias = "kube_alias";
+					String alias = "kube_alias" + projectid;
 					char[] password = "changeit".toCharArray();
 
 					CertificateFactory cf = CertificateFactory.getInstance("X.509");
 					InputStream certstream = fullStream (certfile);
 					Certificate newCert =  cf.generateCertificate(certstream);
 
-					///
 					File dir = new File (System.getProperty("java.home") + File.separator + "lib" + File.separator + "security");
 					File keystoreFile = new File(dir, "cacerts");
 
@@ -124,9 +130,5 @@ public class CertificateUtils {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	public static void main(String[] args) {
-		trustEveryone();
 	}
 }

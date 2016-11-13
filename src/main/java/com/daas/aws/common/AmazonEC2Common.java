@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,10 +12,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javafx.scene.transform.Shear;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,20 +35,28 @@ import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
+import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
+import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.amazonaws.services.ec2.model.KeyPair;
+import com.amazonaws.services.ec2.model.KeyPairInfo;
 import com.amazonaws.services.ec2.model.LaunchPermission;
 import com.amazonaws.services.ec2.model.LaunchPermissionModifications;
 import com.amazonaws.services.ec2.model.ModifyImageAttributeRequest;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
+import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.daas.common.ConfFactory;
-
+import com.jcabi.ssh.SSH;
+import com.jcabi.ssh.Shell;
+import com.daas.model.*;
 /**
  * Base class for common EC2 activities(create, start, stop, getStatus, getLaunchTime)
  * @author vmaheshwari
@@ -73,18 +85,17 @@ public class AmazonEC2Common {
 	 */
 	public void createSecurityGroup(String securityGroupName) {
 
-		CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest();
-
-		csgr.withGroupName(securityGroupName).withDescription("Security Group for Kubernetes Management Server");
-		CreateSecurityGroupResult createSecurityGroupResult =
-				ec2.createSecurityGroup(csgr);
-		IpPermission ipPermission = new IpPermission();
-		ipPermission.withIpRanges("0.0.0.0/0").withFromPort(22).withToPort(22).withIpProtocol("tcp");
-		AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
-				new AuthorizeSecurityGroupIngressRequest();
-		authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
-		.withIpPermissions(ipPermission);
-		ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
+			CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest();
+			csgr.withGroupName(securityGroupName).withDescription("Security Group for Kubernetes Management Server");
+			CreateSecurityGroupResult createSecurityGroupResult =
+					ec2.createSecurityGroup(csgr);
+			IpPermission ipPermission = new IpPermission();
+			ipPermission.withIpRanges("0.0.0.0/0").withFromPort(22).withToPort(22).withIpProtocol("tcp");
+			AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
+					new AuthorizeSecurityGroupIngressRequest();
+			authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
+			.withIpPermissions(ipPermission);
+			ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
 	}
 
 	/**
@@ -94,6 +105,7 @@ public class AmazonEC2Common {
 	 * @return Private Key to the user
 	 */
 	public String createEC2KeyPair(String keyPairName) {
+
 		CreateKeyPairRequest createKeyPairRequest = new CreateKeyPairRequest();
 		createKeyPairRequest.withKeyName(keyPairName);
 		CreateKeyPairResult createKeyPairResult =
@@ -101,6 +113,7 @@ public class AmazonEC2Common {
 		KeyPair keyPair = new KeyPair();
 		keyPair = createKeyPairResult.getKeyPair();
 		this.keyPair = keyPair;
+		System.out.println(keyPair.getKeyMaterial());
 		return keyPair.getKeyMaterial();
 	}
 
@@ -122,44 +135,39 @@ public class AmazonEC2Common {
 
 		// create security group
 		createSecurityGroup(securityGroupName);
-		
+
 		RunInstancesRequest runInstancesRequest = new RunInstancesRequest();
-		
+
 		runInstancesRequest.withImageId(amiId)
-			.withInstanceType(instanceType)
-			.withMinCount(1)
-			.withMaxCount(1)
-			.withKeyName(keyPairName)
-			.withSecurityGroups(securityGroupName)
-			.withUserData(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())))
-			.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamName));
+		.withInstanceType(instanceType)
+		.withMinCount(1)
+		.withMaxCount(1)
+		.withKeyName(keyPairName)
+		.withSecurityGroups(securityGroupName)
+		.withUserData(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())))
+		.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamName));
 		System.out.println(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())));
 		RunInstancesResult runInstancesResult =
-			      ec2.runInstances(runInstancesRequest);
-		
+				ec2.runInstances(runInstancesRequest);
+
 		log.info("Created the instance with AMI ID - "+ amiId);
-		
+
 		Instance instance = runInstancesResult.getReservation().getInstances().get(0);		
 		Integer instanceState = -1;
-		
+
 		while(instanceState != 16) { //Loop until the instance is in the "running" state.
 			instanceState = getInstanceStatus(instance.getInstanceId());
 			try {
 				Thread.sleep(5000);
 			} catch(InterruptedException e) {}
 		}
-		
+
 		try {
 			Thread.sleep(3000);
 		} catch (InterruptedException e) {}
-		
-		DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instance.getInstanceId());
-		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
-		String ip = describeInstanceResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress();
-		
+
 		log.info("Started the instance"+ instance.getInstanceId()+". Launch time is: "+ instance.getLaunchTime());
-		log.info("Public IP address is -> " + ip);
-		return ip;
+		return instance.getInstanceId();
 	}
 
 	/**
@@ -246,7 +254,7 @@ public class AmazonEC2Common {
 		Date date = describeInstanceResult.getReservations().get(0).getInstances().get(0).getLaunchTime();		
 		return date.getTime();
 	}
-	
+
 	/**
 	 * Share an AMI with an user account
 	 * @param amiId
@@ -255,38 +263,81 @@ public class AmazonEC2Common {
 	 * 					AWS User Account Id to share with
 	 */
 	public void shareAMIAcrossAccounts(String amiId, String userAccountId){
-		
+
 		Collection<LaunchPermission> launchPermission = new ArrayList<LaunchPermission>();
 		launchPermission.add(new LaunchPermission().withUserId(userAccountId));
-		
+
 		LaunchPermissionModifications launchPermissionModifications = new LaunchPermissionModifications().withAdd(launchPermission);
-		
+
 		ModifyImageAttributeRequest modifyImageAttributeRequest = new ModifyImageAttributeRequest()
 		.withImageId(amiId).withLaunchPermission(launchPermissionModifications);
-		
+
 		ec2.modifyImageAttribute(modifyImageAttributeRequest);
-		
+
 		log.info("Shared AMI with ID - "+ amiId+" with user account ID - "+ userAccountId);
 	}
-	
-	public  String readFile(String fileName, String projectId, String userId) throws IOException {
-	    BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(fileName)));
-	    
-	    try {
-	        StringBuilder sb = new StringBuilder();
-	        String line = br.readLine();
 
-	        while (line != null) {
-	            sb.append(line);
-	            sb.append("\n");
-	            line = br.readLine();
-	        }
-	        String content = sb.toString();
-	        content = content.replace("userid",userId);
-	        content = content.replace("projectid",projectId);
-	        return content;
-	    } finally {
-	        br.close();
-	    }
+	public  String readFile(String fileName, String projectId, String userId) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(fileName)));
+
+		try {
+			StringBuilder sb = new StringBuilder();
+			String line = br.readLine();
+
+			while (line != null) {
+				sb.append(line);
+				sb.append("\n");
+				line = br.readLine();
+			}
+			String content = sb.toString();
+			content = content.replace("userid",userId);
+			content = content.replace("projectid",projectId);
+			return content;
+		} finally {
+			br.close();
+		}
+	}
+
+	public void createCluster(com.daas.model.Project project, String instanceId, String key) {
+		String publicIP = getPublicIp(instanceId);
+
+		try {
+			Thread.sleep(80000);
+			Shell shell = new SSH(publicIP, 22, "ec2-user", key);
+			List<String> cmdString = new ArrayList<String>();
+			cmdString.add("echo 'KUBERNETES_PROVIDER=aws' >> ~/.bashrc");
+			cmdString.add("echo 'MASTER_SIZE=MRSE' >> ~/.bashrc".replace("MRSE", project.getMaster_size()));
+			cmdString.add("echo 'NODE_SIZE=NESE' >> ~/.bashrc".replace("NESE", project.getNode_size()));
+			cmdString.add("echo 'NUM_NODES=XN' >> ~/.bashrc".replace("XN",project.getNode_numbers()));
+			cmdString.add("echo 'AWS_S3_BUCKET=AWBT' >> ~/.bashrc".replace("AWBT", project.getProject_id()+"kube_"+"s3"));
+			cmdString.add("echo 'KUBE_AWS_INSTANCE_PREFIX=KUIX' >> ~/.bashrc".replace("KUIX", project.getProject_id()));
+			cmdString.add("echo 'USER_ID=UID' >> ~/.bashrc".replace("UID", String.valueOf(project.getUser_id().getUser_id())));
+			cmdString.add("echo 'KUBERNETES_SKIP_CREATE_CLUSTER=1' >> ~/.bashrc");
+			cmdString.add("source ~/.bashrc");
+			cmdString.add("echo '$KUBERNETES_PROVIDER' > /tmp/envr1");
+			cmdString.add("wget -q -O - https://get.k8s.io | bash");
+			cmdString.add("echo '$KUBERNETES_PROVIDER' > /tmp/envr2");
+			cmdString.add("source /home/ec2-user/kubernetes/cluster/kube-up.sh");
+			//cmdString.add("docker run -e KUBERNETES_PROVIDER=$KUBERNETES_PROVIDER -e MASTER_SIZE=$MASTER_SIZE -e NODE_SIZE=$NODE_SIZE -e NUM_NODES=$NUM_NODES -e AWS_S3_BUCKET=$AWS_S3_BUCKET -e KUBE_AWS_INSTANCE_PREFIX=$KUBE_AWS_INSTANCE_PREFIX -e USER_ID=$USER_ID dhruvkalaria/kubernetes-docker-daas /bin/bash -c 'bash kubernetes/cluster/kube-up.sh'");
+			provideSSHCommands(shell, cmdString);
+		} catch (UnknownHostException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public String getPublicIp(String instanceId) {
+		DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instanceId);
+		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
+		return describeInstanceResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress();
+	}
+
+	public void provideSSHCommands(Shell shell, List<String> cmdString) {
+		for(String cmd: cmdString) {
+			try {
+				String stdout = new Shell.Plain(shell).exec(cmd);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

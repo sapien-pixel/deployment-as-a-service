@@ -1,5 +1,7 @@
 package com.daas.kubernetes.common;
 
+import com.daas.kubernetes.utils.CertificateUtils;
+
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;

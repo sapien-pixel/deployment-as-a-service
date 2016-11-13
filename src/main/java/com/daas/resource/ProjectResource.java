@@ -17,6 +17,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
 import com.daas.common.ConfFactory;
@@ -73,7 +75,6 @@ public class ProjectResource {
 		// generate project ID
 		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(Long.valueOf(user_id)).hash().toString());
 		
-		
 		// check if this is User's first project
 		// If it is first project, create EC2 Kube MS first
 		// if not. start another kubernetes container
@@ -82,13 +83,10 @@ public class ProjectResource {
 		User user = userService.read(Long.valueOf(user_id));
 		if(user.getManagementEC2InstanceId() == null) {
 			project = createFirstProject(project,user_id);
-		}
-		
-		
-		else{
-			
-			// Modify instance request - EC2 for 2nd project
-			
+		} else{
+			String key = project.getAws_key();
+			createKuberntesCluster(project, user.getManagementEC2InstanceId(), key);
+
 		}
 
 		project.setUser_id(userService.read(Long.valueOf(user_id)));
@@ -147,7 +145,7 @@ public class ProjectResource {
 	}
 
 
-	public static Project createFirstProject(Project project, String userId) throws IOException{
+	public static synchronized Project createFirstProject(Project project, String userId) throws IOException{
 
 		// share Kube common AMI with User's AWS account
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
@@ -159,6 +157,9 @@ public class ProjectResource {
 		project.setAws_key(key);
 		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), userId);
 		
+		// Create Kubernetes Cluster
+		ec2.createCluster(project,instanceId, key);
+		
 		// Setting the Instance ID for User
 		User user = userService.read(Long.parseLong(userId));
 		user.setManagementEC2InstanceId(instanceId);
@@ -166,5 +167,9 @@ public class ProjectResource {
 		
 		return project;
 	}
-
+	
+	public static void createKuberntesCluster(Project project, String instanceId,String key) {
+		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+		ec2.createCluster(project, instanceId, key);
+	}
 }
