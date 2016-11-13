@@ -8,19 +8,20 @@ import org.hibernate.cfg.Configuration;
 
 public class SessionUtil {
 
-	private static SessionUtil instance=new SessionUtil();
-	private SessionFactory sessionFactory;
+	static SessionUtil instance;
+	static boolean sessionInit = false;
+	private static SessionFactory sessionFactory;
 
 	public static SessionUtil getInstance(){
-		return instance;
-	}
-
-	private SessionUtil(){
-
+		
+		if(sessionInit)
+			return instance;
+		
+		instance=new SessionUtil();
+		
 		Properties dbConnectionProperties = new Properties();
 		try {
-			SessionUtil.class.getClassLoader();
-			dbConnectionProperties.load(ClassLoader.getSystemClassLoader().getResourceAsStream("hibernate.properties"));
+			dbConnectionProperties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hibernate.properties"));
 		} catch(Exception e) {
 			e.printStackTrace();
 			// Log
@@ -28,13 +29,15 @@ public class SessionUtil {
 
 		Configuration configuration = new Configuration().mergeProperties(dbConnectionProperties);
 		configuration.configure("hibernate.cfg.xml");
-
 		sessionFactory = configuration.buildSessionFactory();
+		
+		sessionInit = true;
+		return instance;
 	}
 
 	public static Session getSession(){
+		
 		Session session =  getInstance().sessionFactory.openSession();
-
 		return session;
 	}
 

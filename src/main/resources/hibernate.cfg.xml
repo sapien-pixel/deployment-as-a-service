@@ -11,6 +11,7 @@
 
         <!-- Print executed SQL to stdout -->
         <property name="show_sql">true</property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
 
         <!-- Annotated entity classes -->
         <mapping class="com.daas.model.User"/>
