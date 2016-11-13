@@ -7,7 +7,12 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import java.io.InputStream;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class KubernetesPod {
+
+	private static Logger log = LoggerFactory.getLogger(KubernetesPod.class.getName());
 
 
 	/**

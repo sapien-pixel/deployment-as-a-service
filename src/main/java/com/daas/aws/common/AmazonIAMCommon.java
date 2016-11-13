@@ -21,7 +21,7 @@ public class AmazonIAMCommon {
 
 	private AmazonIdentityManagement iam;
 
-	private static Logger log = LoggerFactory.getLogger(AmazonEC2Common.class.getName());
+	private static Logger log = LoggerFactory.getLogger(AmazonIAMCommon.class.getName());
 
 	/**
 	 * Instantiate AWS IAM 
@@ -42,43 +42,53 @@ public class AmazonIAMCommon {
 
 		try{
 
-			if(checkIAMRole(roleName))
+			if(checkIAMRole(roleName)){
+				log.info("IAM role with name "+ roleName+ "already exists!");
 				return true;
+			}
 
 			String document = "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"Service\": \"ec2.amazonaws.com\"},\"Action\": \"sts:AssumeRole\"}]}";
 
 			// first create role
+			log.info("Creating IAM role with name "+ roleName);
 			CreateRoleRequest createRoleRequest = new CreateRoleRequest()
 			.withRoleName(roleName)
 			.withAssumeRolePolicyDocument(document);
 
 			iam.createRole(createRoleRequest);
-
+			log.info("Created IAM role with name "+ roleName);
+						
 			// Now, attach admin access policy
+			log.info("Attaching admin policy to role "+ roleName);
 			AttachRolePolicyRequest attachRolePolicyRequest = new AttachRolePolicyRequest()
 			.withPolicyArn("arn:aws:iam::aws:policy/AdministratorAccess")		
 			.withRoleName(roleName);
 
 			iam.attachRolePolicy(attachRolePolicyRequest);
-
+			log.info("Attached admin policy to role "+ roleName);
+			
 			// now create instance profile
+			log.info("Creating instance profile with name "+ roleName);
 			CreateInstanceProfileRequest createInstanceProfileRequest = new CreateInstanceProfileRequest()
 			.withInstanceProfileName(roleName);
 
 			iam.createInstanceProfile(createInstanceProfileRequest);
-
+			log.info("Created instance profile with name "+ roleName);			
+			
 			// Lastly, attach this instance profile to the role
+			log.info("Adding role " + roleName+ " to instance profile "+ roleName);
 			AddRoleToInstanceProfileRequest addRoleToInstanceProfileRequest = new AddRoleToInstanceProfileRequest()
 			.withInstanceProfileName(roleName)
 			.withRoleName(roleName);
 
 			iam.addRoleToInstanceProfile(addRoleToInstanceProfileRequest);
+			log.info("Added role " + roleName+ " to instance profile "+ roleName);
 
-			log.info("Created role "+ roleName + " with administrator access.");
-			
+			log.info("Successfully Created role "+ roleName + " with administrator access.");			
 			return true;			
 		} catch(Exception e){			
 			e.printStackTrace();
+			log.error("Could not create/get IAM role.");
 			return false;
 		}
 	}

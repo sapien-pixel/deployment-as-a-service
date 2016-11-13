@@ -1,14 +1,12 @@
 package com.daas.kubernetes.common;
 
-import com.daas.kubernetes.utils.CertificateUtils;
-
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 public class KubernetesConnection {
-	
+		
 	private String URI;
 	private String masterUsername;
 	private String masterPassword;

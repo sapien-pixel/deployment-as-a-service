@@ -17,6 +17,9 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
@@ -38,10 +41,10 @@ import com.google.common.hash.Hashing;
 @Path("/project")
 public class ProjectResource {
 
+	private static Logger log = LoggerFactory.getLogger(ProjectResource.class.getName());
+	
 	static HashFunction hf = Hashing.md5();
-
 	private static UserService userService = new UserServiceImpl();
-
 	private static ProjectService projectService = new ProjectServiceImpl();
 
 	static String amiId = ConfFactory.getConf().getString("ec2.common.amiId");
@@ -55,6 +58,8 @@ public class ProjectResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response addProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id) throws Exception{
 
+		log.info("New request to add a Project for userId - "+ project.getUser_id());
+		
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -75,7 +80,7 @@ public class ProjectResource {
 		map.put("cloud_access_key", project.getCloud_access_key());
 		map.put("cloud_secret_key", project.getCloud_secret_key());
 		DaasUtil.checkForNull(map);
-
+		
 		// create IAM role
 		AmazonIAMCommon iam = new AmazonIAMCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		if(!iam.createAdminAccessIAMRole(iamRoleName))	
@@ -120,6 +125,8 @@ public class ProjectResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getProject(@CookieParam("daas-token") Cookie cookie, @PathParam("id") String id){
 
+		log.info("New request to get a Project with Project ID - "+ id);
+		
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -144,6 +151,8 @@ public class ProjectResource {
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response updateProject(@CookieParam("daas-token") Cookie cookie, Project project){
+
+		log.info("New request to update a Project for userId - "+ project.getUser_id());
 
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
@@ -170,6 +179,8 @@ public class ProjectResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project){
 
+		log.info("New request to delete a Project for userId - "+ project.getUser_id());
+		
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}

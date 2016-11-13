@@ -16,6 +16,10 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.daas.aws.common.AmazonEC2Common;
 import com.daas.common.ConfFactory;
 
 /**
@@ -25,6 +29,7 @@ import com.daas.common.ConfFactory;
  */
 public class JWTUtil {
 
+	private static Logger log = LoggerFactory.getLogger(JWTUtil.class.getName());
 
 	/**
 	 * Generate secret Signing Key
@@ -70,6 +75,8 @@ public class JWTUtil {
 	 */
 	public static String createJWT(String id, String issuer, String subject, long ttlMillis) {
 
+		log.info("Creating JWT for subject - "+ subject+" with id - "+ id);
+		
 		//The JWT signature algorithm used to sign the token
 		SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
 
@@ -96,6 +103,7 @@ public class JWTUtil {
 		}
 
 		//Builds the JWT and serializes it to a compact, URL-safe string
+		log.info("Created JWT for subject - "+ subject+" with id - "+ id);
 		return builder.compact();
 	}
 
@@ -108,6 +116,8 @@ public class JWTUtil {
 	 */
 	public static boolean parseJWT(String jwt) {
 
+		log.info("Validating JWT - "+ jwt);
+
 		try{
 			//This will throw an exception if it is not a signed JWS (as expected)
 			Claims claims = Jwts.parser()
@@ -116,10 +126,11 @@ public class JWTUtil {
 
 		} catch (SignatureException e) {
 			//don't trust the JWT!
+			log.warn("Not a valid JWT..");
 			return false;
 		}
+		log.info("Successfully validated the JWT - "+ jwt);
 		return true;
-
 	}
 
 }

@@ -17,6 +17,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
 import com.daas.model.User;
@@ -28,6 +31,7 @@ import com.daas.util.JWTUtil;
 @Path("/user")
 public class UserResource {
 
+	private static Logger log = LoggerFactory.getLogger(UserResource.class.getName());	
 	private static UserService userService = new UserServiceImpl();
 
 
@@ -35,6 +39,8 @@ public class UserResource {
 	@Path("/signup")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response signup(User user) throws Exception {
+		
+		log.info("New request to add a User with email - "+ user.getEmail());
 
 		//set managementEC2InstanceId as temp to avoid Input Invalid Exception
 		user.setManagementEC2InstanceId(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID);
@@ -55,6 +61,8 @@ public class UserResource {
 	@Path("/login")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response login(User user){
+		
+		log.info("New request to login a User with email - "+ user.getEmail());
 
 		user = userService.validateUser(user);
 
@@ -79,6 +87,8 @@ public class UserResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response updateUser(@CookieParam("daas-token") Cookie cookie, User user){
 
+		log.info("New request to update a User with email - "+ user.getEmail());
+
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -88,9 +98,6 @@ public class UserResource {
 
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
-
-		if(user==null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
 
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
@@ -110,6 +117,8 @@ public class UserResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteUser(@CookieParam("daas-token") Cookie cookie, User user){
 
+		log.info("New request to delete a User with email - "+ user.getEmail());
+
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -120,9 +129,6 @@ public class UserResource {
 
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
-
-		if(user==null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
 
 		user = userService.delete(user);
 
@@ -152,6 +158,8 @@ public class UserResource {
 	@Path("/{user_id}/projects")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getAllProjects(@CookieParam("daas-token") Cookie cookie, @PathParam("user_id") long user_id){
+
+		log.info("New request to get All projects of User with id - "+ user_id);
 
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();

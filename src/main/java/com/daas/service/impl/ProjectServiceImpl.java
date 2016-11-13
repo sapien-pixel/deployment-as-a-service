@@ -56,6 +56,4 @@ public class ProjectServiceImpl implements ProjectService{
 		return true;
 	}
 
-	
-	
 }

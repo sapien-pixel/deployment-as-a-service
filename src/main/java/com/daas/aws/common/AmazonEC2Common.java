@@ -81,6 +81,8 @@ public class AmazonEC2Common {
 			authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
 			.withIpPermissions(ipPermission);
 			ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
+			
+			log.info("Created security group " + securityGroupName);
 	}
 
 	/**
@@ -98,8 +100,11 @@ public class AmazonEC2Common {
 		KeyPair keyPair = new KeyPair();
 		keyPair = createKeyPairResult.getKeyPair();
 		this.keyPair = keyPair;
-		System.out.println(keyPair.getKeyMaterial());
-		return keyPair.getKeyMaterial();
+		
+		log.info("Created key pair " + keyPairName);
+		
+		System.out.println(keyPair.getKeyMaterial());		
+		return keyPair.getKeyMaterial();		
 	}
 
 	/**
@@ -140,7 +145,8 @@ public class AmazonEC2Common {
 		Instance instance = runInstancesResult.getReservation().getInstances().get(0);		
 		Integer instanceState = -1;
 
-		while(instanceState != 16) { //Loop until the instance is in the "running" state.
+		while(instanceState != 16) { //Loop until the instance is in the "running" state.			
+			log.info("Waiting for instance to be in running state...");
 			instanceState = getInstanceStatus(instance.getInstanceId());
 			try {
 				Thread.sleep(5000);

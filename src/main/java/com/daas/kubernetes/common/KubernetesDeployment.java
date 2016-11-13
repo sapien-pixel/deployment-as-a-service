@@ -7,11 +7,16 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import java.io.InputStream;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Utility class for Kubernetes deployment related operations
  * @author Vivek
  */
 public class KubernetesDeployment {
+
+	private static Logger log = LoggerFactory.getLogger(KubernetesDeployment.class.getName());
 
 
 	/**
