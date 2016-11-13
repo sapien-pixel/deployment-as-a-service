@@ -63,11 +63,12 @@ public class UserResource {
 
 		user.setPassword(null);
 
+		// get a JWT token
 		Cookie cookie = new Cookie("daas-token", JWTUtil.createJWT(String.valueOf(user.getUser_id()), DaaSConstants.JWT_ISSUER, user.getEmail(), -1));
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.YEAR, 1);				// set cookie expiry to 1 year
 
-		// get a JWT token
+		// get cookie
 		NewCookie newCookie = new NewCookie(cookie, "", 315360000, cal.getTime(), false, true);
 		return Response.ok("Succesfully logged in.").cookie(newCookie).entity(user).build();	
 	}
