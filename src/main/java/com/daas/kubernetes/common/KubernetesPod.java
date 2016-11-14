@@ -10,13 +10,15 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.daas.exception.DaaSException;
+
 public class KubernetesPod {
 
 	private static Logger log = LoggerFactory.getLogger(KubernetesPod.class.getName());
 
 
 	/**
-	 * Creating a new kubernetes pod
+	 * Creating a new kubernetes pod reading from YAML file
 	 * @param client
 	 * 					Kubernetes client
 	 * @param inputStream
@@ -25,9 +27,27 @@ public class KubernetesPod {
 	 */
 	public static Pod createKubePod(KubernetesClient client, InputStream inputStream) {
 
+		log.info("Creating Kubernetes Pod for URL - " + client.getMasterUrl());
+
 		return client.pods().load(inputStream).create();
 	}
 
+	
+	/**
+	 * Creating a new kubernetes pod from existing Pod
+	 * @param client
+	 * 					Kubernetes client
+	 * @param pod
+	 * 					Kubernetes Pod				
+	 * @return {@link Pod}
+	 */
+	public static Pod createKubePod(KubernetesClient client, Pod pod) {
+
+		log.info("Creating Kubernetes Pod for URL - " + client.getMasterUrl());
+
+		return client.pods().create(pod);
+	}
+	
 
 	/**
 	 * Get a kubernetes pod by name
@@ -36,9 +56,15 @@ public class KubernetesPod {
 	 * @param podName	
 	 * 					Name of the pod
 	 * @return {@link Pod}
+	 * @throws DaaSException 
 	 */
-	public static Pod getKubePod(KubernetesClient client, String podName) {
+	public static Pod getKubePod(KubernetesClient client, String podName) throws DaaSException {
 
+		if(podName == null || podName.isEmpty() || podName==""){
+			log.warn("Invalid pod name");
+			throw new DaaSException("Invalid pod name");
+		}
+		
 		return client.pods().withName(podName).get();		
 	}
 
@@ -65,6 +91,8 @@ public class KubernetesPod {
 	 */
 	public static Pod editKubePod(KubernetesClient client, InputStream inputStream) {
 
+		log.info("Editing Kubernetes Pod for URL - " + client.getMasterUrl());
+
 		return client.pods().load(inputStream).edit().done();
 	}
 
@@ -75,12 +103,18 @@ public class KubernetesPod {
 	 * 					Kubernetes client
 	 * @param podName
 	 * 					Name of the pod
+	 * @throws DaaSException 
 	 */
-	public static void deleteKubePod(KubernetesClient client, String podName) {
+	public static void deleteKubePod(KubernetesClient client, String podName) throws DaaSException {
 
+		if(podName == null || podName.isEmpty() || podName==""){
+			log.warn("Invalid pod name");
+			throw new DaaSException("Invalid pod name");
+		}
+		
+		log.info("Deleting Kubernetes Pod - "+ podName+" for URL - " + client.getMasterUrl());
+		
 		client.pods().withName(podName).delete();		
 	}
-
-	
 
 }

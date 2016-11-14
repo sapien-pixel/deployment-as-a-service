@@ -10,6 +10,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.daas.exception.DaaSException;
+
 
 /**
  * Utility class for Kubernetes service related operations
@@ -20,7 +22,7 @@ public class KubernetesService {
 	private static Logger log = LoggerFactory.getLogger(KubernetesService.class.getName());
 
 	/**
-	 * Creating a new kubernetes service
+	 * Creating a new kubernetes service reading from YAML file
 	 * @param client
 	 * 					Kubernetes client
 	 * @param inputStream
@@ -29,7 +31,24 @@ public class KubernetesService {
 	 */
 	public static Service createKubeService(KubernetesClient client, InputStream inputStream) {
 
+		log.info("Creating Kubernetes Service for URL - " + client.getMasterUrl());
+
 		return client.services().load(inputStream).create();
+	}
+	
+	/**
+	 * Creating a new kubernetes service from a existing kubernetes service
+	 * @param client
+	 * 					Kubernetes client
+	 * @param service
+	 * 					Kubernetes Service	 
+	 * @return {@link Service}
+	 */
+	public static Service createKubeService(KubernetesClient client, Service service) {
+
+		log.info("Creating Kubernetes Service for URL - " + client.getMasterUrl());
+
+		return client.services().create(service);
 	}
 
 
@@ -40,9 +59,15 @@ public class KubernetesService {
 	 * @param serviceName
 	 * 					Name of the service
 	 * @return {@link Service}
+	 * @throws DaaSException 
 	 */
-	public static Service getKubeService(KubernetesClient client, String serviceName) {
+	public static Service getKubeService(KubernetesClient client, String serviceName) throws DaaSException {
 
+		if(serviceName == null || serviceName.isEmpty() || serviceName==""){
+			log.warn("Invalid service name");
+			throw new DaaSException("Invalid service name");
+		}
+		
 		return client.services().withName(serviceName).get();		
 	}
 
@@ -70,6 +95,8 @@ public class KubernetesService {
 	 */
 	public static Service editKubeService(KubernetesClient client, InputStream inputStream) {
 
+		log.info("Editing Kubernetes Pod for URL - " + client.getMasterUrl());
+		
 		return client.services().load(inputStream).edit().done();
 	}
 
@@ -80,12 +107,19 @@ public class KubernetesService {
 	 * 					Kubernetes client
 	 * @param serviceName
 	 * 					Name of the service
+	 * @throws DaaSException 
 	 */
-	public static void deleteKubeService(KubernetesClient client, String serviceName) {
+	public static void deleteKubeService(KubernetesClient client, String serviceName) throws DaaSException {
+
+		if(serviceName == null || serviceName.isEmpty() || serviceName==""){
+			log.warn("Invalid service name");
+			throw new DaaSException("Invalid service name");
+		}
+		
+		log.info("Deleting Kubernetes Service - "+ serviceName+" for URL - " + client.getMasterUrl());
 
 		client.services().withName(serviceName).delete();		
 	}
-
 
 
 }
