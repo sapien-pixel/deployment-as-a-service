@@ -27,16 +27,22 @@ import javax.net.ssl.X509TrustManager;
 
 import org.apache.commons.codec.binary.Base64;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
 /**
  * Utility class to Trust any self signed SSL certificate
  * @author dhruvkalaria
- *
  */
 
 public class CertificateUtils {
 
-	// Overides the Java client to trust any certificate
-	public static void trustEveryone(String urlString, String projectid) { 
+	/**
+	 * Sets the HTTPS Connection URL Class to trust any self signed certificate
+	 * @param urlString
+	 */
+	
+	public static void trustEveryone(String urlString) { 
 		try { 	
 			URL url = new URL(urlString);
 			HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier(){ 
@@ -55,29 +61,27 @@ public class CertificateUtils {
 			HttpsURLConnection.setDefaultSSLSocketFactory( 
 					context.getSocketFactory()); 
 			HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
-			fetchSSLCertificate(con, projectid);
+			fetchSSLCertificate(con);
 		} catch (Exception e) { 
 			e.printStackTrace(); 
 		} 
 	}
 
-	// Reads the File and returns as a byte[] in form of InputStream
-	private static InputStream fullStream ( String fname ) throws IOException {
-		FileInputStream fis = new FileInputStream(fname);
-		DataInputStream dis = new DataInputStream(fis);
-		byte[] bytes = new byte[dis.available()];
-		dis.readFully(bytes);
-		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-		return bais;
-	}
-
-	// Fetch the SSL certificate from the server and add to CACERTS Keystore
-	public static synchronized void fetchSSLCertificate(HttpsURLConnection con, String projectid) throws KeyStoreException, NoSuchAlgorithmException, CertificateException{
+	/**
+	 * Fetch the SSL certificate from the server and add to CACERTS Keystore
+	 * @param con
+	 * @throws KeyStoreException
+	 * @throws NoSuchAlgorithmException
+	 * @throws CertificateException
+	 */
+	
+	public static synchronized void fetchSSLCertificate(HttpsURLConnection con) throws KeyStoreException, NoSuchAlgorithmException, CertificateException{
 
 		if(con!=null){
 
 			try {
-
+				HashFunction hf = Hashing.md5();
+				String rand = hf.newHasher().putLong(System.currentTimeMillis()).hash().toString();
 				Certificate[] certs = con.getServerCertificates();
 				for(Certificate cert : certs){
 
@@ -101,7 +105,7 @@ public class CertificateUtils {
 					KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
 					keystore.load(is, "changeit".toCharArray());
 
-					String alias = "kube_alias" + projectid;
+					String alias = "kube_alias" + rand;
 					char[] password = "changeit".toCharArray();
 
 					CertificateFactory cf = CertificateFactory.getInstance("X.509");
@@ -130,5 +134,22 @@ public class CertificateUtils {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	/**
+	 * Reads a file and converts to InputStream
+	 * @param fname
+	 * @return
+	 * @throws IOException
+	 */
+	
+	private static InputStream fullStream ( String fname ) throws IOException {
+		FileInputStream fis = new FileInputStream(fname);
+		DataInputStream dis = new DataInputStream(fis);
+		byte[] bytes = new byte[dis.available()];
+		dis.readFully(bytes);
+		ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		dis.close();
+		return bais;
 	}
 }

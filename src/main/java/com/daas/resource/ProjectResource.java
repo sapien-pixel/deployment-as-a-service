@@ -18,8 +18,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
 import com.daas.common.ConfFactory;
@@ -40,9 +38,7 @@ import com.google.common.hash.Hashing;
 public class ProjectResource {
 
 	static HashFunction hf = Hashing.md5();
-
 	private static UserService userService = new UserServiceImpl();
-
 	private static ProjectService projectService = new ProjectServiceImpl();
 
 	static String amiId = ConfFactory.getConf().getString("ec2.common.amiId");
@@ -70,7 +66,6 @@ public class ProjectResource {
 		if(!userService.userExists(user_id))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
 
-
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("cloud_access_key", project.getCloud_access_key());
@@ -87,10 +82,6 @@ public class ProjectResource {
 		// generate project ID
 		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(user_id).hash().toString());
 
-		// check if this is User's first project
-		// If it is first project, create EC2 Kube MS first
-		// if not. start another kubernetes container
-
 		// first project
 		User user = userService.read(user_id);
 		String key = null;
@@ -98,11 +89,12 @@ public class ProjectResource {
 			// create keypair
 			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 			key = ec2.createEC2KeyPair(keypairName);
-			project = createFirstProject(project,user_id);
+			project = createFirstProject(project,user_id, user.getOrganization());
 
 		} else{
 			key = project.getAws_key();
-			createKuberntesCluster(project, user.getManagementEC2InstanceId(), key);
+			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+			ec2.createCluster(project, user.getManagementEC2InstanceId(), key, user.getOrganization());
 		}
 
 		project.setUser_id(user);
@@ -118,7 +110,6 @@ public class ProjectResource {
 		// send keyPair in header, send null if not first project
 		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
 	}
-
 
 	@GET
 	@Path("/{id}")
@@ -171,9 +162,9 @@ public class ProjectResource {
 
 
 	@DELETE
-	@Path("/delete")
+	@Path("/delete/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
-	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project){
+	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id){
 
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
@@ -185,7 +176,15 @@ public class ProjectResource {
 
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
-
+		
+		
+		//Delete cluster
+		String key = project.getAws_key();
+		User user = userService.read(user_id);
+		
+		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+		ec2.deleteCluster(project, user.getManagementEC2InstanceId(),key);
+		
 		project = projectService.delete(project);
 
 		if(project==null)
@@ -194,10 +193,17 @@ public class ProjectResource {
 		return Response.ok("Succesfully deleted Project").entity(project).build();
 	}
 
+	/**
+	 * Extension static method from /add REST API to create EC2 instance and create Kubernetes Cluster
+	 * @param project
+	 * @param userId
+	 * @param orgName
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 
-
-
-	public static synchronized Project createFirstProject(Project project, Long userId) throws IOException{
+	public static Project createFirstProject(Project project, Long userId, String orgName) throws IOException, InterruptedException{
 
 		// share Kube common AMI with User's AWS account
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
@@ -212,7 +218,7 @@ public class ProjectResource {
 		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
 		
 		// Create Kubernetes Cluster
-		ec2.createCluster(project,instanceId, key);
+		ec2.createCluster(project,instanceId, key,orgName);
 		
 		// Setting the Instance ID for User
 		User user = userService.read(userId);
@@ -220,10 +226,5 @@ public class ProjectResource {
 		userService.update(user);
 
 		return project;
-	}
-	
-	public static void createKuberntesCluster(Project project, String instanceId,String key) {
-		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-		ec2.createCluster(project, instanceId, key);
 	}
 }

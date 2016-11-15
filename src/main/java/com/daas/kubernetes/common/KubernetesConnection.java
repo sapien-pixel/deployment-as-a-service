@@ -9,7 +9,7 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 
 public class KubernetesConnection {
 	
-	private String URI;
+	private String URI; // https://<IP>:<PORT>
 	private String masterUsername;
 	private String masterPassword;
 	
@@ -21,12 +21,12 @@ public class KubernetesConnection {
 		this.masterPassword = masterPassword;
 	}
 	
-	
 	public KubernetesClient getClient() {
 		
 		if(client != null)
 			return client;
-
+		
+		CertificateUtils.trustEveryone(this.URI);
 		Config config = new ConfigBuilder().withMasterUrl(URI)
 				.withTrustCerts(true)			          
 				.withUsername(masterUsername)
@@ -35,6 +35,4 @@ public class KubernetesConnection {
 		
 		return new DefaultKubernetesClient(config);
 	}
-	
-	
 }

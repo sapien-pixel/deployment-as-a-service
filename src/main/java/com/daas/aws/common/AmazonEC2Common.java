@@ -1,24 +1,15 @@
 package com.daas.aws.common;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.codec.binary.Base64;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.ec2.AmazonEC2;
@@ -27,42 +18,31 @@ import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairResult;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
-import com.amazonaws.services.ec2.model.CreateSecurityGroupResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
-import com.amazonaws.services.ec2.model.DescribeKeyPairsRequest;
-import com.amazonaws.services.ec2.model.DescribeKeyPairsResult;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsRequest;
-import com.amazonaws.services.ec2.model.DescribeSecurityGroupsResult;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceState;
 import com.amazonaws.services.ec2.model.IpPermission;
 import com.amazonaws.services.ec2.model.KeyPair;
-import com.amazonaws.services.ec2.model.KeyPairInfo;
 import com.amazonaws.services.ec2.model.LaunchPermission;
 import com.amazonaws.services.ec2.model.LaunchPermissionModifications;
 import com.amazonaws.services.ec2.model.ModifyImageAttributeRequest;
 import com.amazonaws.services.ec2.model.RunInstancesRequest;
 import com.amazonaws.services.ec2.model.RunInstancesResult;
-import com.amazonaws.services.ec2.model.SecurityGroup;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
-import com.daas.common.ConfFactory;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
-import com.daas.model.*;
-
-
 
 /**
  * Base class for common EC2 activities(create, start, stop, getStatus, getLaunchTime)
  * @author vmaheshwari
+ * @author dhruvkalaria
  */
 public class AmazonEC2Common {
 
 	private AmazonEC2 ec2;
-	private KeyPair keyPair;
 
 	private static Logger log = LoggerFactory.getLogger(AmazonEC2Common.class.getName());
 
@@ -82,20 +62,13 @@ public class AmazonEC2Common {
 	 * 								Name of security group
 	 */
 	public void createSecurityGroup(String securityGroupName) {
-
-			CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest();
-			csgr.withGroupName(securityGroupName).withDescription("Security Group for Kubernetes Management Server");
-			CreateSecurityGroupResult createSecurityGroupResult =
-					ec2.createSecurityGroup(csgr);
-			IpPermission ipPermission = new IpPermission();
-			ipPermission.withIpRanges("0.0.0.0/0").withFromPort(22).withToPort(22).withIpProtocol("tcp");
-			AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
-					new AuthorizeSecurityGroupIngressRequest();
-			authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
-			.withIpPermissions(ipPermission);
-			ec2.authorizeSecurityGroupIngress(authorizeSecurityGroupIngressRequest);
+		CreateSecurityGroupRequest csgr = new CreateSecurityGroupRequest();
+		csgr.withGroupName(securityGroupName).withDescription("Security Group for Kubernetes Management Server");
+		ec2.createSecurityGroup(csgr);
+		ec2.authorizeSecurityGroupIngress(createIpPermissions(securityGroupName, 22));
+		ec2.authorizeSecurityGroupIngress(createIpPermissions(securityGroupName, 1883));
 	}
-
+	
 	/**
 	 * Creates a Key pair to SSH the Management Server
 	 * @param keyPairName
@@ -110,7 +83,6 @@ public class AmazonEC2Common {
 				ec2.createKeyPair(createKeyPairRequest);
 		KeyPair keyPair = new KeyPair();
 		keyPair = createKeyPairResult.getKeyPair();
-		this.keyPair = keyPair;
 		System.out.println(keyPair.getKeyMaterial());
 		return keyPair.getKeyMaterial();
 	}
@@ -128,8 +100,9 @@ public class AmazonEC2Common {
 	 * @param keyPairName
 	 * 							Name of keypair 
 	 * @throws IOException 
+	 * @throws InterruptedException 
 	 */
-	public String createEC2Instance(String amiId, String instanceType, String iamName, String securityGroupName, String keyPairName, String projectId, String userId) throws IOException {
+	public String createEC2Instance(String amiId, String instanceType, String iamName, String securityGroupName, String keyPairName, String projectId, String userId) throws IOException, InterruptedException {
 
 		// create security group
 		createSecurityGroup(securityGroupName);
@@ -142,9 +115,8 @@ public class AmazonEC2Common {
 		.withMaxCount(1)
 		.withKeyName(keyPairName)
 		.withSecurityGroups(securityGroupName)
-		.withUserData(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())))
 		.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(iamName));
-		System.out.println(new String(Base64.encodeBase64(readFile("/cmd.sh", projectId, userId).getBytes())));
+
 		RunInstancesResult runInstancesResult =
 				ec2.runInstances(runInstancesRequest);
 
@@ -155,15 +127,12 @@ public class AmazonEC2Common {
 
 		while(instanceState != 16) { //Loop until the instance is in the "running" state.
 			instanceState = getInstanceStatus(instance.getInstanceId());
-			try {
 				Thread.sleep(5000);
-			} catch(InterruptedException e) {}
 		}
-
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {}
-
+		
+		// Buffer wait 
+		Thread.sleep(3000); 
+		
 		log.info("Started the instance"+ instance.getInstanceId()+". Launch time is: "+ instance.getLaunchTime());
 		return instance.getInstanceId();
 	}
@@ -215,6 +184,7 @@ public class AmazonEC2Common {
 	 * @param instanceIds
 	 * 					  String array of instanceIds to get codes for
 	 */
+	
 	public ArrayList<Integer> getInstanceStatus(String[] instanceIds) {
 
 		ArrayList<Integer> instanceStateCodes = new ArrayList<Integer>();
@@ -274,29 +244,18 @@ public class AmazonEC2Common {
 
 		log.info("Shared AMI with ID - "+ amiId+" with user account ID - "+ userAccountId);
 	}
-
-	public  String readFile(String fileName, String projectId, String userId) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(fileName)));
-
-		try {
-			StringBuilder sb = new StringBuilder();
-			String line = br.readLine();
-
-			while (line != null) {
-				sb.append(line);
-				sb.append("\n");
-				line = br.readLine();
-			}
-			String content = sb.toString();
-			content = content.replace("userid",userId);
-			content = content.replace("projectid",projectId);
-			return content;
-		} finally {
-			br.close();
-		}
-	}
-
-	public void createCluster(com.daas.model.Project project, String instanceId, String key) {
+	
+	/**
+	 * Creates a Kuberntes Cluster by SSHing inside the machine and executing commands
+	 * Synchronous Method does not return until whole script is executed
+	 * 
+	 * @param project
+	 * @param instanceId
+	 * @param key
+	 * @param orgName
+	 */
+	
+	public void createCluster(com.daas.model.Project project, String instanceId, String key, String orgName) {
 		String publicIP = getPublicIp(instanceId);
 
 		try {
@@ -310,32 +269,84 @@ public class AmazonEC2Common {
 			cmdString.add("echo 'AWS_S3_BUCKET=AWBT' >> ~/.bashrc".replace("AWBT", project.getProject_id()+"kube_"+"s3"));
 			cmdString.add("echo 'KUBE_AWS_INSTANCE_PREFIX=KUIX' >> ~/.bashrc".replace("KUIX", project.getProject_id()));
 			cmdString.add("echo 'USER_ID=UID' >> ~/.bashrc".replace("UID", String.valueOf(project.getUser_id().getUser_id())));
-			cmdString.add("echo 'KUBERNETES_SKIP_CREATE_CLUSTER=1' >> ~/.bashrc");
+			cmdString.add("echo 'ORG_NAME=ONE' >> ~/.bashrc".replace("ONE", orgName));
 			cmdString.add("source ~/.bashrc");
-			cmdString.add("echo '$KUBERNETES_PROVIDER' > /tmp/envr1");
-			cmdString.add("wget -q -O - https://get.k8s.io | bash");
-			cmdString.add("echo '$KUBERNETES_PROVIDER' > /tmp/envr2");
+			cmdString.add("sleep 2");
+			cmdString.add("sudo service mosquitto restart");
+			cmdString.add("sleep 4");
 			cmdString.add("source /home/ec2-user/kubernetes/cluster/kube-up.sh");
-			//cmdString.add("docker run -e KUBERNETES_PROVIDER=$KUBERNETES_PROVIDER -e MASTER_SIZE=$MASTER_SIZE -e NODE_SIZE=$NODE_SIZE -e NUM_NODES=$NUM_NODES -e AWS_S3_BUCKET=$AWS_S3_BUCKET -e KUBE_AWS_INSTANCE_PREFIX=$KUBE_AWS_INSTANCE_PREFIX -e USER_ID=$USER_ID dhruvkalaria/kubernetes-docker-daas /bin/bash -c 'bash kubernetes/cluster/kube-up.sh'");
-			provideSSHCommands(shell, cmdString);
+			executeSSHCommand(shell, cmdString);
 		} catch (UnknownHostException | InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
-
+	
+	/**
+	 * Deletes the Kubernetes Cluster based on the KUBE_INSTANCE_PREFIX value set
+	 * @param project
+	 * @param instanceId
+	 * @param key
+	 * @param orgName
+	 */
+	
+	public void deleteCluster(com.daas.model.Project project, String instanceId, String key) {
+		String publicIP = getPublicIp(instanceId);
+		
+		try {
+			Shell shell = new SSH(publicIP, 22, "ec2-user", key);
+			List<String> cmdString = new ArrayList<String>();
+			cmdString.add("echo 'KUBE_AWS_INSTANCE_PREFIX=KUIX' >> ~/.bashrc".replace("KUIX", project.getProject_id()));
+			cmdString.add("source ~/.bashrc");
+			cmdString.add("sleep 2");
+			cmdString.add("source /home/ec2-user/kubernetes/cluster/kube-down.sh");
+			executeSSHCommand(shell, cmdString);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Returns the Public IP of the EC2 instance based on the instance id
+	 * @param instanceId
+	 * @return
+	 */
+	
 	public String getPublicIp(String instanceId) {
 		DescribeInstancesRequest describeInstanceRequest = new DescribeInstancesRequest().withInstanceIds(instanceId);
 		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest);
 		return describeInstanceResult.getReservations().get(0).getInstances().get(0).getPublicIpAddress();
 	}
-
-	public void provideSSHCommands(Shell shell, List<String> cmdString) {
+	
+	/**
+	 * Creates a SSH connection and executes the command
+	 * @param shell
+	 * @param cmdString - Shell Command to Execute
+	 */
+	
+	public static void executeSSHCommand(Shell shell, List<String> cmdString) {
 		for(String cmd: cmdString) {
 			try {
-				String stdout = new Shell.Plain(shell).exec(cmd);
+				new Shell.Plain(shell).exec(cmd);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	/**
+	 * Opens Ingress port to the security group
+	 * @param securityGroupName
+	 * @param port
+	 * @return AuthorizeSecurityGroupIngressRequest Object to be passed to AmazonEC2 object
+	 */
+	
+	public static AuthorizeSecurityGroupIngressRequest createIpPermissions(String securityGroupName, int port) {
+		IpPermission ipPermission = new IpPermission();
+		ipPermission.withIpRanges("0.0.0.0/0").withFromPort(port).withToPort(port).withIpProtocol("tcp");
+		AuthorizeSecurityGroupIngressRequest authorizeSecurityGroupIngressRequest =
+				new AuthorizeSecurityGroupIngressRequest();
+		authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
+		.withIpPermissions(ipPermission);
+		return authorizeSecurityGroupIngressRequest;
 	}
 }
