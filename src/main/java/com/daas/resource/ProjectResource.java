@@ -60,7 +60,7 @@ public class ProjectResource {
 
 		log.info("New request to add a Project for userId - "+ project.getUser_id());
 		
-		if (cookie == null) {
+		if (cookie == null) { 
 			return Response.serverError().entity("ERROR").build();
 		}
 
