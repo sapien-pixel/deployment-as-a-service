@@ -53,6 +53,28 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
+	public boolean checkEmailExists(String email) {
+
+		User valid_user = userDAO.getUserByEmail(email);
+
+		if(valid_user==null){
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean checkOrganizationExists(String orgName) {
+
+		User valid_user = userDAO.getUserByOrganization(orgName);
+
+		if(valid_user==null){
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public User validateUser(User user) {
 
 		User valid_user = userDAO.read(user.getUser_id());
@@ -69,7 +91,7 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public boolean userExists(long id) {
-		
+
 		User valid_user = userDAO.read(id);
 
 		if(valid_user==null){
@@ -84,7 +106,7 @@ public class UserServiceImpl implements UserService {
 		if(!userExists(user_id)){
 			return null;
 		}
-		
+
 		return userDAO.getAllProjects(user_id);
 	}
 

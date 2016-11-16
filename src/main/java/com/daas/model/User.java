@@ -14,7 +14,7 @@ import javax.persistence.UniqueConstraint;
  */
 @Entity
 @Table(name="userprofiles", uniqueConstraints = { @UniqueConstraint(columnNames = {
-"email"}) })
+"email", "organization"}) })
 public class User {
 
 	@Id
@@ -34,7 +34,7 @@ public class User {
 	@Column(name="password")
 	private String password;
 	
-	@Column(name="organization")
+	@Column(name="organization",nullable=false)
 	private String organization;
 	
 	@Column(name="dateRegistered")

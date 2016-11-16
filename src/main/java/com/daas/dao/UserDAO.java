@@ -44,6 +44,22 @@ public interface UserDAO {
 	public User delete(User user);
 	
 	/**
+	 * get a User by email
+	 * @param email	
+	 * 					Email Id
+	 * @return {@link User} if exists, null if not
+	 */
+	public User getUserByEmail(String email);
+	
+	/**
+	 * get a User by organization name
+	 * @param orgName	
+	 * 					Name of organization
+	 * @return {@link User} if exists, null if not
+	 */
+	public User getUserByOrganization(String orgName);
+	
+	/**
 	 * get all projects for the user
 	 * @param user_id
 	 * 					User id

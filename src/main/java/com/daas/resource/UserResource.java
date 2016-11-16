@@ -19,7 +19,6 @@ import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
 import com.daas.model.User;
@@ -55,7 +54,39 @@ public class UserResource {
 		user.setPassword(null);
 		return Response.ok("Succesfully added User").entity(user).build();
 	}
+	
+	
+	/**
+	 * Check if the selected email is unique or not
+	 * @param user
+	 */
+	@GET
+	@Path("/checkEmail/{email}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response checkUniqueEmail(@PathParam("email") String email){
 
+		if(userService.checkEmailExists(email))
+			return Response.ok("Email Id available").entity("{ \"available\": true}").build();
+		else
+			return Response.ok("Email Id not available").entity("{ \"available\": false}").build();
+	}
+	
+	/**
+	 * Check if the selected organization name is unique or not
+	 * @param orgName
+	 * 					Name of organization
+	 */
+	@GET
+	@Path("/checkOrg/{orgName}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response checkUniqueOrganization(@PathParam("orgName") String orgName){
+
+		if(userService.checkOrganizationExists(orgName))
+			return Response.ok("Organization Name available").entity("{ \"available\": true}").build();
+		else
+			return Response.ok("Organization Name not available").entity("{ \"available\": false}").build();
+	}
+	
 
 	@POST
 	@Path("/login")

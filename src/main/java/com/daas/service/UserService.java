@@ -43,6 +43,22 @@ public interface UserService {
 	public User delete(User user);
 	
 	/**
+	 * check if a User with given email exists
+	 * @param email	
+	 * 					Email Id
+	 * @return true if not exists, false otherwise.
+	 */
+	public boolean checkEmailExists(String email);
+	
+	/**
+	 * check if a User with given organization name exists
+	 * @param orgName	
+	 * 					Name of organization
+	 * @return true if not exists, false otherwise.
+	 */
+	public boolean checkOrganizationExists(String orgName);
+	
+	/**
 	 * validate a User
 	 * @param User
 	 * 				User object
