@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.validator.routines.UrlValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +81,19 @@ public class DaasUtil {
 		return matcher.matches();
 	}
 
-
+	/**
+	 * Check if URL is valid or not
+	 * @param url
+	 * 				URL to validate
+	 * @return true if URL valid, false if not
+	 */
+	public static boolean validURL(String url){
+		
+		UrlValidator urlValidator = new UrlValidator();
+	    if (urlValidator.isValid(url)) {
+	    	return true;
+	    } 
+		return false;
+	}
 
 }

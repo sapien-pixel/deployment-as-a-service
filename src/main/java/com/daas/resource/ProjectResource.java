@@ -1,7 +1,12 @@
 package com.daas.resource;
 
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.extensions.Deployment;
+import io.fabric8.kubernetes.client.KubernetesClient;
+
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.Consumes;
@@ -26,6 +31,9 @@ import com.daas.aws.common.AmazonIAMCommon;
 import com.daas.aws.common.AmazonSTSCommon;
 import com.daas.common.ConfFactory;
 import com.daas.common.DaaSConstants;
+import com.daas.kubernetes.common.KubernetesConnection;
+import com.daas.kubernetes.common.KubernetesDeployment;
+import com.daas.kubernetes.common.KubernetesService;
 import com.daas.model.Project;
 import com.daas.model.User;
 import com.daas.service.ProjectService;
@@ -36,13 +44,15 @@ import com.daas.util.DaasUtil;
 import com.daas.util.JWTUtil;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.gson.Gson;
 
 
 @Path("/project")
 public class ProjectResource {
 
 	private static Logger log = LoggerFactory.getLogger(ProjectResource.class.getName());
-	
+	static Gson gson = new Gson();
+
 	static HashFunction hf = Hashing.md5();
 	private static UserService userService = new UserServiceImpl();
 	private static ProjectService projectService = new ProjectServiceImpl();
@@ -52,14 +62,14 @@ public class ProjectResource {
 	static String securityGroupName = ConfFactory.getConf().getString("ec2.security.groupName");
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
 	static String iamRoleName = ConfFactory.getConf().getString("iam.role.admin");
-	
+
 	@POST
 	@Path("/add/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response addProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id) throws Exception{
 
-		log.info("New request to add a Project for userId - "+ project.getUser_id());
-		
+		log.info("New request to add a Project for userId - "+ user_id);
+
 		if (cookie == null) { 
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -80,7 +90,7 @@ public class ProjectResource {
 		map.put("cloud_access_key", project.getCloud_access_key());
 		map.put("cloud_secret_key", project.getCloud_secret_key());
 		DaasUtil.checkForNull(map);
-		
+
 		// create IAM role
 		AmazonIAMCommon iam = new AmazonIAMCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		if(!iam.createAdminAccessIAMRole(iamRoleName))	
@@ -116,13 +126,66 @@ public class ProjectResource {
 		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
 	}
 
+
+	@GET
+	@Path("/clusterDetails/{id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getClusterDetails(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("id") String id) throws Exception{
+
+		log.info("New request to get Cluster details for Project with ID - "+ id);
+
+		if (cookie == null) {
+			return Response.serverError().entity("ERROR").build();
+		}
+
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+
+		// check for mandatory fields, if null values
+		Map<String,Object> map = new  HashMap<String,Object>();
+		map.put("old_cluster_url", project.getOld_clusterURL());
+		map.put("clusterMasterUsername", project.getClusterMasterUsername());
+		map.put("clusterMasterPassword", project.getClusterMasterPassword());
+		DaasUtil.checkForNull(map);
+
+		// check if URL is valid - https://<IP>:<PORT>
+		if(!DaasUtil.validURL(project.getOld_clusterURL()))
+			return Response.status(Response.Status.BAD_REQUEST).entity("Not a valid Master URL").build();
+
+		if(projectService.read(id)==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
+
+		// Connect to Kubernetes cluster
+		KubernetesConnection kubernetesConnection = new KubernetesConnection(project.getOld_clusterURL(), project.getClusterMasterUsername(), project.getClusterMasterPassword());
+		KubernetesClient client = kubernetesConnection.getClient();
+		if(client == null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Kubernetes Cluster").build();			
+
+		// Get Cluster info, services and deployments
+		List<Service> services = KubernetesService.getAllKubeServices(client);
+		List<Deployment> deployments = KubernetesDeployment.getAllKubeDeployments(client);
+
+		// TODO: Have to see thhe format once?
+		Map<String,Object> clusterDetails = new HashMap<String,Object>();
+		clusterDetails.put("services", gson.toJson(services));
+		clusterDetails.put("deployments", gson.toJson(deployments));
+
+		// return services and deployment list - String in JSON format
+		return Response.ok("Success").entity(gson.toJson(clusterDetails)).build();
+	}
+
+
 	@GET
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getProject(@CookieParam("daas-token") Cookie cookie, @PathParam("id") String id){
 
 		log.info("New request to get a Project with Project ID - "+ id);
-		
+
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -157,7 +220,7 @@ public class ProjectResource {
 		// validate jwt
 		String token = cookie.getValue();
 		boolean validToken = JWTUtil.parseJWT(token);
-		
+
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
 
@@ -176,7 +239,7 @@ public class ProjectResource {
 	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id){
 
 		log.info("New request to delete a Project for userId - "+ project.getUser_id());
-		
+
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -187,15 +250,15 @@ public class ProjectResource {
 
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
-		
-		
+
+
 		//Delete cluster
 		String key = project.getAws_key();
 		User user = userService.read(user_id);
-		
+
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		ec2.deleteCluster(project, user.getManagementEC2InstanceId(),key);
-		
+
 		project = projectService.delete(project);
 
 		if(project==null)
@@ -226,12 +289,12 @@ public class ProjectResource {
 		ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		String key = ec2.createEC2KeyPair(keypairName);
 		project.setAws_key(key);
-		
+
 		String instanceId = ec2.createEC2Instance(amiId, instanceType, iamRoleName, securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
-		
+
 		// Create Kubernetes Cluster
 		ec2.createCluster(project,instanceId, key,orgName);
-		
+
 		// Setting the Instance ID for User
 		User user = userService.read(userId);
 		user.setManagementEC2InstanceId(instanceId);

@@ -24,6 +24,7 @@
 		<guava.version>20.0</guava.version>
 		<jcabi.version>1.5.2</jcabi.version>
 		<jjwt.version>0.7.0</jjwt.version>
+		<apache.commons.validator.version>1.5.1</apache.commons.validator.version>
 	</properties>
 
 	<repositories>
@@ -152,6 +153,11 @@
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt</artifactId>
 			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-validator</groupId>
+			<artifactId>commons-validator</artifactId>
+			<version>${apache.commons.validator.version}</version>
 		</dependency>
 	</dependencies>
 </project>

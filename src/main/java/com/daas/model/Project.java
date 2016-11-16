@@ -40,6 +40,15 @@ public class Project {
 	private String project_url;
 
 	@Transient
+	private String old_clusterURL;
+
+	@Transient
+	private String clusterMasterUsername;
+
+	@Transient
+	private String clusterMasterPassword;
+
+	@Transient
 	private String cloud_access_key;
 
 	@Transient
@@ -47,7 +56,7 @@ public class Project {
 
 	@Transient
 	private String Aws_key;
-	
+
 	@Transient
 	private String master_size;
 
@@ -157,6 +166,49 @@ public class Project {
 	}
 
 	/**
+	 * @return the old_clusterURL
+	 */
+	public String getOld_clusterURL() {
+		return old_clusterURL;
+	}
+
+	/**
+	 * @param old_clusterURL the old_clusterURL to set
+	 */
+	public void setOld_clusterURL(String old_clusterURL) {
+		this.old_clusterURL = old_clusterURL;
+	}
+
+	/**
+	 * @return the clusterMasterUsername
+	 */
+	public String getClusterMasterUsername() {
+		return clusterMasterUsername;
+	}
+
+	/**
+	 * @param clusterMasterUsername the clusterMasterUsername to set
+	 */
+	public void setClusterMasterUsername(String clusterMasterUsername) {
+		this.clusterMasterUsername = clusterMasterUsername;
+	}
+
+	/**
+	 * @return the clusterMasterPassword
+	 */
+	public String getClusterMasterPassword() {
+		return clusterMasterPassword;
+	}
+
+	/**
+	 * @param clusterMasterPassword the clusterMasterPassword to set
+	 */
+	public void setClusterMasterPassword(String clusterMasterPassword) {
+		this.clusterMasterPassword = clusterMasterPassword;
+	}
+
+
+	/**
 	 * @return the cloud_access_key
 	 */
 	public String getCloud_access_key() {
@@ -225,7 +277,7 @@ public class Project {
 	public void setNode_numbers(String node_numbers) {
 		this.node_numbers = node_numbers;
 	}
-	
+
 	public String getAws_key() {
 		return Aws_key;
 	}
