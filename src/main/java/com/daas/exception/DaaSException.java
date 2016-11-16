@@ -2,9 +2,9 @@ package com.daas.exception;
 
 /**
  * @author Vivek
- * InputInvalidException is the custom exception thrown for invalid inputs
+ * DaaSException is the custom exception thrown across DaaS
  */
-public class InputInvalidException extends Exception {
+public class DaaSException extends Exception {
 
 	/**
 	 * 
@@ -15,7 +15,7 @@ public class InputInvalidException extends Exception {
 	 * 
 	 * @param cause
 	 */
-	public InputInvalidException(Throwable cause) {
+	public DaaSException(Throwable cause) {
 		super(cause);
 	}
 
@@ -23,10 +23,9 @@ public class InputInvalidException extends Exception {
 	 * 
 	 * @param message
 	 */
-	public InputInvalidException(String message) {
+	public DaaSException(String message) {
 		super(message);
 	}
-
 
 
 }

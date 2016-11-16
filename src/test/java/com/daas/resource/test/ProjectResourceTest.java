@@ -12,11 +12,12 @@ public class ProjectResourceTest {
 	@Test
 	public void createFirstProjectTest() throws InterruptedException {
 		Project project = new Project();
-		project.setCloud_access_key("AKIAI7PDFDGMIA4K3MLQ");
-		project.setCloud_secret_key("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");
-		project.setCloud_account_id("022487948790");
-		project.setIam_admin_role("kubernetes");
+		project.setCloud_access_key("");
+		project.setCloud_secret_key("");
 		project.setProject_id("kubePrj-4");
+		project.setCloud_access_key("");
+		project.setCloud_secret_key("");
+		project.setProject_id("kubePrj-1");
 		project.setMaster_size("t2.micro");
 		project.setNode_size("t2.micro");
 		project.setNode_numbers("1");

@@ -35,10 +35,11 @@ import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.jcabi.ssh.SSH;
 import com.jcabi.ssh.Shell;
 
+
 /**
  * Base class for common EC2 activities(create, start, stop, getStatus, getLaunchTime)
- * @author vmaheshwari
- * @author dhruvkalaria
+ * @author Vivek
+ * @author Dhruv
  */
 public class AmazonEC2Common {
 
@@ -83,6 +84,7 @@ public class AmazonEC2Common {
 				ec2.createKeyPair(createKeyPairRequest);
 		KeyPair keyPair = new KeyPair();
 		keyPair = createKeyPairResult.getKeyPair();
+		log.info("Created key pair " + keyPairName);
 		System.out.println(keyPair.getKeyMaterial());
 		return keyPair.getKeyMaterial();
 	}
@@ -125,7 +127,8 @@ public class AmazonEC2Common {
 		Instance instance = runInstancesResult.getReservation().getInstances().get(0);		
 		Integer instanceState = -1;
 
-		while(instanceState != 16) { //Loop until the instance is in the "running" state.
+		while(instanceState != 16) { //Loop until the instance is in the "running" state.			
+			log.info("Waiting for instance to be in running state...");
 			instanceState = getInstanceStatus(instance.getInstanceId());
 				Thread.sleep(5000);
 		}
@@ -347,6 +350,7 @@ public class AmazonEC2Common {
 				new AuthorizeSecurityGroupIngressRequest();
 		authorizeSecurityGroupIngressRequest.withGroupName(securityGroupName)
 		.withIpPermissions(ipPermission);
+		log.info("Created security group " + securityGroupName);
 		return authorizeSecurityGroupIngressRequest;
 	}
 }

@@ -8,6 +8,7 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 public class KubernetesConnection {
+
 	
 	private String URI; // https://<IP>:<PORT>
 	private String masterUsername;

@@ -17,9 +17,13 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.daas.aws.common.AmazonEC2Common;
 import com.daas.aws.common.AmazonIAMCommon;
+import com.daas.aws.common.AmazonSTSCommon;
 import com.daas.common.ConfFactory;
 import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
@@ -37,6 +41,8 @@ import com.google.common.hash.Hashing;
 @Path("/project")
 public class ProjectResource {
 
+	private static Logger log = LoggerFactory.getLogger(ProjectResource.class.getName());
+	
 	static HashFunction hf = Hashing.md5();
 	private static UserService userService = new UserServiceImpl();
 	private static ProjectService projectService = new ProjectServiceImpl();
@@ -45,13 +51,16 @@ public class ProjectResource {
 	static String instanceType = ConfFactory.getConf().getString("ec2.kubeMS.instanceType");
 	static String securityGroupName = ConfFactory.getConf().getString("ec2.security.groupName");
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
-
+	static String iamRoleName = ConfFactory.getConf().getString("iam.role.admin");
+	
 	@POST
 	@Path("/add/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response addProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id) throws Exception{
 
-		if (cookie == null) {
+		log.info("New request to add a Project for userId - "+ project.getUser_id());
+		
+		if (cookie == null) { 
 			return Response.serverError().entity("ERROR").build();
 		}
 
@@ -70,14 +79,12 @@ public class ProjectResource {
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("cloud_access_key", project.getCloud_access_key());
 		map.put("cloud_secret_key", project.getCloud_secret_key());
-		map.put("iam_admin_role", project.getIam_admin_role());
-		map.put("cloud_account_id", project.getCloud_account_id());
 		DaasUtil.checkForNull(map);
-
-		// check if IAM role exists
+		
+		// create IAM role
 		AmazonIAMCommon iam = new AmazonIAMCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-		if(!iam.checkIAMRole(project.getIam_admin_role()))
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid IAM role name").build();
+		if(!iam.createAdminAccessIAMRole(iamRoleName))	
+			return Response.status(Response.Status.BAD_REQUEST).entity("Problem creating IAM role").build();
 
 		// generate project ID
 		project.setProject_id(hf.newHasher().putLong(System.currentTimeMillis()).putLong(user_id).hash().toString());
@@ -103,9 +110,7 @@ public class ProjectResource {
 
 		// set keys null
 		project.setCloud_access_key(null);
-		project.setCloud_account_id(null);
 		project.setCloud_secret_key(null);
-		project.setIam_admin_role(null);
 
 		// send keyPair in header, send null if not first project
 		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
@@ -116,6 +121,8 @@ public class ProjectResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getProject(@CookieParam("daas-token") Cookie cookie, @PathParam("id") String id){
 
+		log.info("New request to get a Project with Project ID - "+ id);
+		
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -140,6 +147,8 @@ public class ProjectResource {
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response updateProject(@CookieParam("daas-token") Cookie cookie, Project project){
+
+		log.info("New request to update a Project for userId - "+ project.getUser_id());
 
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
@@ -166,6 +175,8 @@ public class ProjectResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id){
 
+		log.info("New request to delete a Project for userId - "+ project.getUser_id());
+		
 		if (cookie == null) {
 			return Response.serverError().entity("ERROR").build();
 		}
@@ -206,16 +217,17 @@ public class ProjectResource {
 	public static Project createFirstProject(Project project, Long userId, String orgName) throws IOException, InterruptedException{
 
 		// share Kube common AMI with User's AWS account
+		AmazonSTSCommon sts = new AmazonSTSCommon(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+		String userAccountId = sts.getUserAWSAccountId();
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(ConfFactory.getPrivateConf().getString("vivek.aws.accessId"), ConfFactory.getPrivateConf().getString("vivek.aws.secretKey")));
-		ec2.shareAMIAcrossAccounts(amiId, project.getCloud_account_id());		
+		ec2.shareAMIAcrossAccounts(amiId, userAccountId);		
 
 		// create EC2 Kube Management server on User's AWS account
-
 		ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		String key = ec2.createEC2KeyPair(keypairName);
 		project.setAws_key(key);
 		
-		String instanceId = ec2.createEC2Instance(amiId, instanceType, project.getIam_admin_role(), securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
+		String instanceId = ec2.createEC2Instance(amiId, instanceType, iamRoleName, securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
 		
 		// Create Kubernetes Cluster
 		ec2.createCluster(project,instanceId, key,orgName);

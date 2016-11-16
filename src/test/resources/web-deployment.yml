@@ -1,0 +1,17 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: web-deployment
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        name: web
+    spec:
+      containers:
+      - image: gcr.io/<YOUR-PROJECT-ID>/myapp
+        name: web
+        ports:
+        - name: http-server
+          containerPort: 3000
