@@ -4,6 +4,7 @@ import com.daas.dao.ProjectDAO;
 import com.daas.dao.impl.ProjectDAOImpl;
 import com.daas.model.Project;
 import com.daas.service.ProjectService;
+import com.daas.util.DaasUtil;
 
 /**
  * {@link Project} Service Implementation
@@ -55,5 +56,23 @@ public class ProjectServiceImpl implements ProjectService{
 		}
 		return true;
 	}
+
+	@Override
+	public boolean projectURLExists(String id) {
+		
+		Project valid_project = projectDAO.read(id);
+
+		if(valid_project==null)
+			return false;		
+		
+		if(valid_project.getProject_url()==null || valid_project.getProject_url().isEmpty() || valid_project.getProject_url()=="")
+			return false;
+		
+		if(DaasUtil.validURL(valid_project.getProject_url()))
+			return true;
+		
+		return false;
+	}
+	
 
 }

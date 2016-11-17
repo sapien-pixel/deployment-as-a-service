@@ -49,4 +49,13 @@ public interface ProjectService {
 	 */
 	public boolean projectExists(String id);
 	
+	/**
+	 * check if project_url for this project exists
+	 * @param id
+	 * 				Project id
+	 * @return true, if exists
+	 * false, if not
+	 */
+	public boolean projectURLExists(String id);
+	
 }

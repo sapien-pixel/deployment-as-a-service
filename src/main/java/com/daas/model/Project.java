@@ -1,5 +1,10 @@
 package com.daas.model;
 
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.extensions.Deployment;
+
+import java.util.List;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -40,6 +45,15 @@ public class Project {
 	private String project_url;
 
 	@Transient
+	private String project_username;
+
+	@Transient
+	private String project_password;
+
+	@Column(name="app_url")
+	private String app_url;
+
+	@Transient
 	private String old_clusterURL;
 
 	@Transient
@@ -65,6 +79,12 @@ public class Project {
 
 	@Transient
 	private String node_numbers;
+
+	@Transient
+	private List<Service> services;
+
+	@Transient
+	private List<Deployment> deployments;	
 
 
 	/**
@@ -166,6 +186,48 @@ public class Project {
 	}
 
 	/**
+	 * @return the project_username
+	 */
+	public String getProject_username() {
+		return project_username;
+	}
+
+	/**
+	 * @param project_username the project_username to set
+	 */
+	public void setProject_username(String project_username) {
+		this.project_username = project_username;
+	}
+
+	/**
+	 * @return the project_password
+	 */
+	public String getProject_password() {
+		return project_password;
+	}
+
+	/**
+	 * @param project_password the project_password to set
+	 */
+	public void setProject_password(String project_password) {
+		this.project_password = project_password;
+	}
+
+	/**
+	 * @return the app_url
+	 */
+	public String getApp_url() {
+		return app_url;
+	}
+
+	/**
+	 * @param app_url the app_url to set
+	 */
+	public void setApp_url(String app_url) {
+		this.app_url = app_url;
+	}
+
+	/**
 	 * @return the old_clusterURL
 	 */
 	public String getOld_clusterURL() {
@@ -237,6 +299,20 @@ public class Project {
 	}
 
 	/**
+	 * @return the aws_key
+	 */
+	public String getAws_key() {
+		return Aws_key;
+	}
+
+	/**
+	 * @param aws_key the aws_key to set
+	 */
+	public void setAws_key(String aws_key) {
+		Aws_key = aws_key;
+	}
+
+	/**
 	 * @return the master_size
 	 */
 	public String getMaster_size() {
@@ -278,14 +354,32 @@ public class Project {
 		this.node_numbers = node_numbers;
 	}
 
-	public String getAws_key() {
-		return Aws_key;
+	/**
+	 * @return the services
+	 */
+	public List<Service> getServices() {
+		return services;
 	}
 
-	public void setAws_key(String aws_key) {
-		Aws_key = aws_key;
+	/**
+	 * @param services the services to set
+	 */
+	public void setServices(List<Service> services) {
+		this.services = services;
 	}
 
+	/**
+	 * @return the deployments
+	 */
+	public List<Deployment> getDeployments() {
+		return deployments;
+	}
 
+	/**
+	 * @param deployments the deployments to set
+	 */
+	public void setDeployments(List<Deployment> deployments) {
+		this.deployments = deployments;
+	}
 
 }

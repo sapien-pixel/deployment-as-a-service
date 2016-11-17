@@ -34,6 +34,13 @@ public class UserResource {
 	private static UserService userService = new UserServiceImpl();
 
 
+	/**
+	 * Sign up a new user to DaaS
+	 * @param user
+	 * 				User object
+	 * @return created/updated User object
+	 * @throws Exception
+	 */
 	@POST
 	@Path("/signup")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -58,7 +65,9 @@ public class UserResource {
 	
 	/**
 	 * Check if the selected email is unique or not
-	 * @param user
+	 * @param email
+	 * 				Email Id
+	 * @return true if available, false otherwise
 	 */
 	@GET
 	@Path("/checkEmail/{email}")
@@ -70,6 +79,7 @@ public class UserResource {
 		else
 			return Response.ok("Email Id not available").entity("{ \"available\": false}").build();
 	}
+	
 	
 	/**
 	 * Check if the selected organization name is unique or not
@@ -88,6 +98,13 @@ public class UserResource {
 	}
 	
 
+	/**
+	 * Login a user to DaaS
+	 * Also, sets a JWT cookie
+	 * @param user
+	 * 				User object
+	 * @return User object
+	 */
 	@POST
 	@Path("/login")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -113,6 +130,14 @@ public class UserResource {
 	}
 
 
+	/**
+	 * Update a DaaS user
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param user
+	 * 					User object
+	 * @return updated User object
+	 */
 	@PUT
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -132,7 +157,7 @@ public class UserResource {
 
 		if(!DaasUtil.validEmail(user.getEmail()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid email").build();
-
+		
 		user = userService.update(user);
 
 		if(user==null)
@@ -163,13 +188,19 @@ public class UserResource {
 
 		user = userService.delete(user);
 
-		if(user==null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid user").build();
-
+		// TODO: delete all it's Projects
+		
 		user.setPassword(null);
 		return Response.ok("Succesfully deleted User").entity(user).build();
 	}
 
+	
+	/**
+	 * Logouts the user from DaaS, removes the cookie basically
+	 * @param cookie
+	 * 					JWT cookie
+	 * @return
+	 */
 	@GET
 	@Path("/logout")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -185,6 +216,14 @@ public class UserResource {
 	}
 
 
+	/**
+	 * Gets a list of all DaaS projects of a user
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param user_id
+	 * 					User Id
+	 * @return List of Projects
+	 */
 	@GET
 	@Path("/{user_id}/projects")
 	@Produces(MediaType.APPLICATION_JSON)

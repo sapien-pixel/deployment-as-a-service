@@ -44,14 +44,12 @@ import com.daas.util.DaasUtil;
 import com.daas.util.JWTUtil;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.gson.Gson;
 
 
 @Path("/project")
 public class ProjectResource {
 
 	private static Logger log = LoggerFactory.getLogger(ProjectResource.class.getName());
-	static Gson gson = new Gson();
 
 	static HashFunction hf = Hashing.md5();
 	private static UserService userService = new UserServiceImpl();
@@ -63,6 +61,18 @@ public class ProjectResource {
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
 	static String iamRoleName = ConfFactory.getConf().getString("iam.role.admin");
 
+	/**
+	 * Add a new Kubernetes DaaS project
+	 * This creates a Kubernetes cluster with specified configurations.
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					Project object
+	 * @param user_id
+	 * 					User Id
+	 * @return created/updated Project object
+	 * @throws Exception
+	 */
 	@POST
 	@Path("/add/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -125,8 +135,67 @@ public class ProjectResource {
 		// send keyPair in header, send null if not first project
 		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
 	}
+	
+	/**
+	 * Updates the Project with Cluster master IP(project_url).
+	 * Called upon successful creation/setup of Kubernetes cluster
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					Project Object
+	 * @param id
+	 * 					Project Id
+	 * @return updated Project object
+	 * @throws Exception
+	 */
+	@POST
+	@Path("/updateClusterMaster/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response updateClusterMaster(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("id") String id) throws Exception{
 
+		log.info("New request to add Cluster IP for a Project with ID - "+ id);
 
+		if (cookie == null) { 
+			return Response.serverError().entity("ERROR").build();
+		}
+
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+
+		String project_url = project.getProject_url();
+		
+		// check for mandatory fields, if null values
+		Map<String,Object> map = new  HashMap<String,Object>();
+		map.put("project_id", id);
+		map.put("project_url", project_url);
+		DaasUtil.checkForNull(map);
+				
+		project = projectService.read(id);
+		
+		if(project==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
+
+		project.setProject_url(project_url);
+		projectService.update(project);
+		
+		return Response.ok("Succesfully updated Project with Cluster IP").entity(project).build();		
+	}
+
+	/**
+	 * Get a Kubernetes cluster details(services and deployments)
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					Project Object
+	 * @param id
+	 * 					Project Id
+	 * @return updated Project object
+	 * @throws Exception
+	 */
 	@GET
 	@Path("/clusterDetails/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -145,6 +214,9 @@ public class ProjectResource {
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
 
+		if(projectService.read(id)==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
+		
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("old_cluster_url", project.getOld_clusterURL());
@@ -156,9 +228,6 @@ public class ProjectResource {
 		if(!DaasUtil.validURL(project.getOld_clusterURL()))
 			return Response.status(Response.Status.BAD_REQUEST).entity("Not a valid Master URL").build();
 
-		if(projectService.read(id)==null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
-
 		// Connect to Kubernetes cluster
 		KubernetesConnection kubernetesConnection = new KubernetesConnection(project.getOld_clusterURL(), project.getClusterMasterUsername(), project.getClusterMasterPassword());
 		KubernetesClient client = kubernetesConnection.getClient();
@@ -166,19 +235,90 @@ public class ProjectResource {
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Kubernetes Cluster").build();			
 
 		// Get Cluster info, services and deployments
-		List<Service> services = KubernetesService.getAllKubeServices(client);
-		List<Deployment> deployments = KubernetesDeployment.getAllKubeDeployments(client);
+		project.setServices(KubernetesService.getAllKubeServices(client));
+		project.setDeployments(KubernetesDeployment.getAllKubeDeployments(client));
 
-		// TODO: Have to see thhe format once?
-		Map<String,Object> clusterDetails = new HashMap<String,Object>();
-		clusterDetails.put("services", gson.toJson(services));
-		clusterDetails.put("deployments", gson.toJson(deployments));
-
-		// return services and deployment list - String in JSON format
-		return Response.ok("Success").entity(gson.toJson(clusterDetails)).build();
+		// TODO: Have to see thhe format once
+		return Response.ok("Success").entity(project).build();
 	}
 
+	
+	/**
+	 * This method creates/deploys application(services and deployments) on the cluster created using DaaS.
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					Project object
+	 * @param id
+	 * 					Project Id
+	 * @return updated Project object
+	 * @throws Exception
+	 */
+	@POST
+	@Path("/deployApp/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response deployApp(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("id") String id) throws Exception{
 
+		log.info("New request to deploy application on Kubernetes Cluster for Project with ID - "+ id);
+
+		if (cookie == null) { 
+			return Response.serverError().entity("ERROR").build();
+		}
+
+		// validate jwt
+		String token = cookie.getValue();
+		boolean validToken = JWTUtil.parseJWT(token);
+
+		if(!validToken)
+			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
+		
+		if(projectService.read(id)==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
+		
+		// check for mandatory fields, if null values
+		Map<String,Object> map = new  HashMap<String,Object>();
+		map.put("project_url", project.getProject_url());
+		map.put("project_username", project.getProject_username());
+		map.put("project_password", project.getProject_password());
+		DaasUtil.checkForNull(map);
+		
+		// check if project_url exists
+		if(!projectService.projectURLExists(id))
+			return Response.status(Response.Status.BAD_REQUEST).entity("There's something wrong with the Cluster IP").build();
+		
+		// check if services and deployments are not empty
+		if(project.getServices().size()==0 || project.getDeployments().size()==0)
+			return Response.ok("No services/deployments to deploy").entity(project).build();
+		
+		// Connect to Kubernetes cluster
+		KubernetesConnection kubernetesConnection = new KubernetesConnection(project.getProject_url(), project.getProject_username(), project.getProject_password());
+		KubernetesClient client = kubernetesConnection.getClient();
+		if(client == null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Project's Kubernetes Cluster").build();
+		
+		// TODO: confirm if UI can handle the number of replicas in same object
+		// create services and deployments		
+		List<Service> services= KubernetesService.createKubeServices(client, project.getServices());
+		List<Deployment> deployments = KubernetesDeployment.createKubeDeployments(client, project.getDeployments());		
+		
+		project.setServices(services);
+		project.setDeployments(deployments);
+		
+		// set App IP
+		project = addAppIpToProject(project, services);		
+		
+		return Response.ok("Succesfully deployed app").entity(project).build();		
+	}
+	
+
+	/**
+	 * Gets a project(cluster)
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param id
+	 * 					Project Id
+	 * @return Project object
+	 */
 	@GET
 	@Path("/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -206,6 +346,14 @@ public class ProjectResource {
 	}
 
 
+	/**
+	 * Updates a DaaS project
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					Project object
+	 * @return updated Project object
+	 */
 	@PUT
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -233,6 +381,16 @@ public class ProjectResource {
 	}
 
 
+	/**
+	 * Delete a DaaS project i.e. the kube cluster
+	 * @param cookie
+	 * 					JWT cookie
+	 * @param project
+	 * 					project object
+	 * @param user_id
+	 * 					User Id
+	 * @return deleted Project
+	 */
 	@DELETE
 	@Path("/delete/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -251,7 +409,14 @@ public class ProjectResource {
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
 
-
+		// check if valid user
+		if(!userService.userExists(user_id))
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
+		
+		// check if valid project
+		if(projectService.read(project.getProject_id())==null)
+			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
+		
 		//Delete cluster
 		String key = project.getAws_key();
 		User user = userService.read(user_id);
@@ -261,22 +426,22 @@ public class ProjectResource {
 
 		project = projectService.delete(project);
 
-		if(project==null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
-
 		return Response.ok("Succesfully deleted Project").entity(project).build();
 	}
 
+	// TODO: make this private?
 	/**
 	 * Extension static method from /add REST API to create EC2 instance and create Kubernetes Cluster
 	 * @param project
+	 * 					Project Object
 	 * @param userId
+	 * 					User Id
 	 * @param orgName
-	 * @return
+	 * 					Organization Name
+	 * @return updated Project object
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-
 	public static Project createFirstProject(Project project, Long userId, String orgName) throws IOException, InterruptedException{
 
 		// share Kube common AMI with User's AWS account
@@ -302,4 +467,28 @@ public class ProjectResource {
 
 		return project;
 	}
+	
+	/**
+	 * Upon successful deployment of application on Kube Cluster(created through DaaS), update the App IP
+	 * @param project
+	 * 						Project object
+	 * @param services
+	 * 						List of Kubernetes services
+	 * @return updated Project object
+	 */
+	private Project addAppIpToProject(Project project, List<Service> services) {
+		
+		String ip;
+		for(Service service: services){
+			// TODO: what to get? couple of options here10
+			ip = service.getSpec().getLoadBalancerIP();
+			if(ip != null){
+				project.setApp_url(ip);
+				break;
+			}			
+		}
+		return project;
+	}
+
+	
 }

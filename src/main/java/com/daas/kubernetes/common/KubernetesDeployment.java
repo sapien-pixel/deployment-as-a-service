@@ -6,6 +6,7 @@ import io.fabric8.kubernetes.api.model.extensions.DeploymentSpec;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -51,6 +52,28 @@ public class KubernetesDeployment {
 		log.info("Creating Kubernetes Deployment for URL - " + client.getMasterUrl());
 
 		return client.extensions().deployments().create(deployment);
+	}
+	
+	/**
+	 * Creating a list of deployments from existing Kubernetes deployments
+	 * @param client
+	 * 					Kubernetes client
+	 * @param deployments
+	 * 					List of Deployment to create
+	 * @return list of {@link Deployment}
+	 */
+	public static List<Deployment> createKubeDeployments(KubernetesClient client, List<Deployment> deployments){
+		
+		log.info("Creating Kubernetes Deployments for URL - " + client.getMasterUrl());
+		
+		List<Deployment> createdDeployments = new ArrayList<Deployment>();
+		
+		for (Deployment deployment : deployments){
+			createKubeDeployment(client, deployment);
+			createdDeployments.add(deployment);
+			log.info("Created Kubernetes Deployment -"+ deployment.getMetadata().getName()+ " for URL - "+ client.getMasterUrl());
+		}
+		return createdDeployments;
 	}
 
 
