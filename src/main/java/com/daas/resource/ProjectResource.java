@@ -235,10 +235,11 @@ public class ProjectResource {
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Kubernetes Cluster").build();			
 
 		// Get Cluster info, services and deployments
+		// removes the default services, deployments and unnecessary resources
 		project.setServices(KubernetesService.getAllKubeServices(client));
 		project.setDeployments(KubernetesDeployment.getAllKubeDeployments(client));
-
-		// TODO: Have to see thhe format once
+		
+		// TODO: Have to see the format once
 		return Response.ok("Success").entity(project).build();
 	}
 
@@ -295,7 +296,7 @@ public class ProjectResource {
 		KubernetesClient client = kubernetesConnection.getClient();
 		if(client == null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Project's Kubernetes Cluster").build();
-		
+				
 		// TODO: confirm if UI can handle the number of replicas in same object
 		// create services and deployments		
 		List<Service> services= KubernetesService.createKubeServices(client, project.getServices());
@@ -304,6 +305,7 @@ public class ProjectResource {
 		project.setServices(services);
 		project.setDeployments(deployments);
 		
+		// TODO: the external IP takes some time
 		// set App IP
 		project = addAppIpToProject(project, services);		
 		
@@ -480,8 +482,8 @@ public class ProjectResource {
 		
 		String ip;
 		for(Service service: services){
-			// TODO: what to get? couple of options here10
-			ip = service.getSpec().getLoadBalancerIP();
+			// TODO: what to get? couple of options here
+			ip = service.getStatus().getLoadBalancer().getIngress().get(0).getIp();
 			if(ip != null){
 				project.setApp_url(ip);
 				break;
