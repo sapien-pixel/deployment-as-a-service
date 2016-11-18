@@ -96,18 +96,39 @@ public class KubernetesService {
 
 
 	/**
-	 * Get List of all the kubernetes services
+	 * Get List of all the kubernetes services, removing the default services
 	 * @param client
 	 * 					Kubernetes client
 	 * @return list of {@link Service}
 	 */
 	public static List<Service> getAllKubeServices(KubernetesClient client) {
 
-		ServiceList serviceList = client.services().list();		
-		return serviceList.getItems();		
+		ServiceList serviceList = client.services().list();
+		return removeAllDefaultServices(serviceList.getItems());
+	}
+	
+	/**
+	 * Removes the default kube services and unnecessary resources
+	 * Resources removed are - Cluster IP, Resource version
+	 * @param services
+	 * 					List of Service
+	 * @return
+	 */
+	private static List<Service> removeAllDefaultServices(List<Service> services){
+		
+		List<Service> updatedServices = new ArrayList<Service>();
+		
+		for(Service service : services){			
+			if(!KubernetesUtils.DEFAULT_KUBE_SERVICES.contains(service.getMetadata().getName())){				
+				service.getSpec().setClusterIP(null);
+				service.getMetadata().setResourceVersion("v1");
+				updatedServices.add(service);
+			}				
+		}
+		return updatedServices;
 	}
 
-
+	
 	/**
 	 * Edit a kubernetes service
 	 * @param client

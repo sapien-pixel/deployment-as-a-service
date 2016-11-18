@@ -125,7 +125,7 @@ public class KubernetesDeployment {
 
 
 	/**
-	 * Get List of all the kubernetes deployments
+	 * Get List of all the kubernetes deployments, removing the default deployments
 	 * @param client
 	 * 					Kubernetes client
 	 * @return list of {@link Deployment}
@@ -133,9 +133,30 @@ public class KubernetesDeployment {
 	public static List<Deployment> getAllKubeDeployments(KubernetesClient client) {
 
 		DeploymentList deploymentList = client.extensions().deployments().list();
-		return deploymentList.getItems();		
+		return removeAllDefaultDeployments(deploymentList.getItems());		
 	}
 
+	
+	/**
+	 * Removes the default kube deployments and unnecessary resources
+	 * Resources removed are - Resource version
+	 * @param deployments
+	 * 					List of Deployment
+	 * @return
+	 */
+	private static List<Deployment> removeAllDefaultDeployments(List<Deployment> deployments){
+		
+		List<Deployment> updatedDeployments = new ArrayList<Deployment>();
+		
+		for(Deployment deployment : deployments){			
+			if(!KubernetesUtils.DEFAULT_KUBE_DEPLOYMENTS.contains(deployment.getMetadata().getName())){				
+				deployment.getMetadata().setResourceVersion("v1");
+				updatedDeployments.add(deployment);
+			}				
+		}
+		return updatedDeployments;
+	}
+	
 
 	/**
 	 * Edit a kubernetes deployment
