@@ -61,6 +61,7 @@ public class CertificateUtils {
 			HttpsURLConnection.setDefaultSSLSocketFactory( 
 					context.getSocketFactory()); 
 			HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+			con.connect();
 			fetchSSLCertificate(con);
 		} catch (Exception e) { 
 			e.printStackTrace(); 
@@ -94,11 +95,11 @@ public class CertificateUtils {
 					String pemCert = cert_begin + pemCertPre + end_cert;
 
 					System.out.println(pemCert);
-					PrintWriter writer = new PrintWriter("/tmp/cert.pem");
+					PrintWriter writer = new PrintWriter("/cert.pem");
 					writer.println(pemCert);
 					writer.close();
 
-					String certfile = "/tmp/cert.pem"; /*your cert path*/
+					String certfile = "/cert.pem"; /*your cert path*/
 
 					File dirIs = new File (System.getProperty("java.home") + File.separator + "lib" + File.separator + "security" + File.separator + "cacerts");
 					FileInputStream is = new FileInputStream(dirIs);
