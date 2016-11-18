@@ -18,6 +18,8 @@ import com.amazonaws.services.ec2.model.AuthorizeSecurityGroupIngressRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairRequest;
 import com.amazonaws.services.ec2.model.CreateKeyPairResult;
 import com.amazonaws.services.ec2.model.CreateSecurityGroupRequest;
+import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.CreateVolumeResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
@@ -87,6 +89,20 @@ public class AmazonEC2Common {
 		log.info("Created key pair " + keyPairName);
 		System.out.println(keyPair.getKeyMaterial());
 		return keyPair.getKeyMaterial();
+	}
+	
+	
+	/**
+	 * Creates a volume for persistant storage stateful applications
+	 * @param volumeSize
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public String createVolume(String volumeSize) throws InterruptedException {
+		CreateVolumeRequest request = new  CreateVolumeRequest(Integer.valueOf(volumeSize),"ec2.us-west-2.amazonaws.com");
+		CreateVolumeResult volumeResponse = ec2.createVolume(request);
+		Thread.sleep(10000);
+		return volumeResponse.getVolume().getVolumeId();
 	}
 
 	/**

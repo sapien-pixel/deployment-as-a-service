@@ -73,6 +73,12 @@ public class Project {
 
 	@Transient
 	private String master_size;
+	
+	@Transient
+	private String volume_size;
+	
+	@Transient
+	private String volume_id;
 
 	@Transient
 	private String node_size;
@@ -324,6 +330,22 @@ public class Project {
 	 */
 	public void setMaster_size(String master_size) {
 		this.master_size = master_size;
+	}
+
+	public String getVolume_size() {
+		return volume_size;
+	}
+
+	public void setVolume_size(String volume_size) {
+		this.volume_size = volume_size;
+	}
+
+	public String getVolume_id() {
+		return volume_id;
+	}
+
+	public void setVolume_id(String volume_id) {
+		this.volume_id = volume_id;
 	}
 
 	/**

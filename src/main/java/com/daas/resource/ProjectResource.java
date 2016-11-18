@@ -116,6 +116,9 @@ public class ProjectResource {
 			// create keypair
 			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 			key = ec2.createEC2KeyPair(keypairName);
+			if(project.getVolume_size()!=null) {
+				project.setVolume_id(ec2.createVolume(project.getVolume_size()));
+			}
 			project = createFirstProject(project,user_id, user.getOrganization());
 
 		} else{

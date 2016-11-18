@@ -59,8 +59,9 @@ public class CertificateUtils {
 					return new X509Certificate[0]; 
 				}}}, new SecureRandom()); 
 			HttpsURLConnection.setDefaultSSLSocketFactory( 
-					context.getSocketFactory()); 
+					context.getSocketFactory());
 			HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+			con.connect();
 			fetchSSLCertificate(con);
 		} catch (Exception e) { 
 			e.printStackTrace(); 

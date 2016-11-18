@@ -10,12 +10,12 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import org.junit.Test;
 
 import com.daas.common.ConfFactory;
-import com.daas.kubernetes.utils.*;
+import com.daas.kubernetes.utils.CertificateUtils;
 
 public class CertificateUtilsTest {
 	
 	@Test
-	public void trustCertificate() {
+	public void trustCertificateTest() {
 		String ipAddr = ConfFactory.getConf().getString("kube.master.ip");
 		String port = ConfFactory.getConf().getString("kube.master.port");
 		String URI = "https://" + ipAddr+ ":" + port;
