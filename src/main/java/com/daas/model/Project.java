@@ -71,7 +71,6 @@ public class Project {
 	@Transient
 	private String Aws_key;
 
-	@Transient
 	private String master_size;
 	
 	@Transient
@@ -80,10 +79,8 @@ public class Project {
 	@Transient
 	private String volume_id;
 
-	@Transient
 	private String node_size;
 
-	@Transient
 	private String node_numbers;
 
 	@Transient
