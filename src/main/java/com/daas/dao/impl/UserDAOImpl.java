@@ -1,5 +1,6 @@
 package com.daas.dao.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.HibernateException;
@@ -131,16 +132,16 @@ public class UserDAOImpl implements UserDAO {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public List<Project> getAllProjects(long user_id) {
+	public List<Project> getAllProjects(User user) {
 
 		Session session = SessionUtil.getSession();
 		Transaction tx =  session.beginTransaction();
-		List<Project> projects = null;
+		List<Project> projects = new ArrayList<Project>();
 		try{
 
-			String hql = "FROM com.daas.model.Project as p where p.user_id = :user_id";
+			String hql = "FROM com.daas.model.Project as p where p.user_id = :user";
 			projects = session.createQuery(hql)
-					.setParameter("user_id", user_id)
+					.setParameter("user", user)
 					.getResultList();
 			tx.commit();
 		} catch(HibernateException h) {

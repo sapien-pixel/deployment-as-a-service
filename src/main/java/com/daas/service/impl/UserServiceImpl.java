@@ -77,7 +77,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public User validateUser(User user) {
 
-		User valid_user = userDAO.read(user.getUser_id());
+		User valid_user = userDAO.getUserByEmail(user.getEmail());
 
 		// log
 		System.out.println(valid_user.getPassword());
@@ -101,13 +101,9 @@ public class UserServiceImpl implements UserService {
 	}
 
 	@Override
-	public List<Project> getAllProjects(long user_id) {
+	public List<Project> getAllProjects(User user) {
 
-		if(!userExists(user_id)){
-			return null;
-		}
-
-		return userDAO.getAllProjects(user_id);
+		return userDAO.getAllProjects(user);
 	}
 
 }

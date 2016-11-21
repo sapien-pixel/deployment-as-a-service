@@ -77,10 +77,10 @@ public interface UserService {
 	
 	/**
 	 * get all projects for the user
-	 * @param user_id
-	 * 					User id
+	 * @param user
+	 * 					User 
 	 * @return List of all {@link Project} of the user
 	 */
-	public List<Project> getAllProjects(long user_id);
+	public List<Project> getAllProjects(User user);
 	
 }

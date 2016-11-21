@@ -32,7 +32,9 @@ public class UserResource {
 
 	private static Logger log = LoggerFactory.getLogger(UserResource.class.getName());	
 	private static UserService userService = new UserServiceImpl();
-
+	
+	private static String cookiePath = "/";
+	private static String cookieDomain = "localhost";
 
 	/**
 	 * Sign up a new user to DaaS
@@ -120,12 +122,12 @@ public class UserResource {
 		user.setPassword(null);
 
 		// get a JWT token
-		Cookie cookie = new Cookie("daas-token", JWTUtil.createJWT(String.valueOf(user.getUser_id()), DaaSConstants.JWT_ISSUER, user.getEmail(), -1));
+		Cookie cookie = new Cookie("daas-token", JWTUtil.createJWT(String.valueOf(user.getUser_id()), DaaSConstants.JWT_ISSUER, user.getEmail(), -1),cookiePath, cookieDomain);
 		Calendar cal = Calendar.getInstance();
 		cal.add(Calendar.YEAR, 1);				// set cookie expiry to 1 year
 
 		// get cookie
-		NewCookie newCookie = new NewCookie(cookie, "", 315360000, cal.getTime(), false, true);
+		NewCookie newCookie = new NewCookie(cookie, "", 315360000, cal.getTime(), false, false);
 		return Response.ok("Succesfully logged in.").cookie(newCookie).entity(user).build();	
 	}
 
@@ -246,11 +248,8 @@ public class UserResource {
 		if(user==null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid User").build();
 
-		List<Project> projects = userService.getAllProjects(user_id);
+		List<Project> projects = userService.getAllProjects(user);
 
-		if(projects == null)
-			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid user id").build();
-
-		return Response.ok("Success").entity(projects).build();		
+		return Response.ok("Success").entity(projects.toString()).build();		
 	}
 }
