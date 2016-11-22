@@ -70,17 +70,20 @@ public class Project {
 
 	@Transient
 	private String Aws_key;
-
+	
+	@Column(name="masterSize")
 	private String master_size;
 	
-	@Transient
+	@Column(name="volumeSize")
 	private String volume_size;
 	
 	@Transient
 	private String volume_id;
 
+	@Column(name="nodeSize")
 	private String node_size;
-
+	
+	@Column(name="nodeNumbers")
 	private String node_numbers;
 
 	@Transient
