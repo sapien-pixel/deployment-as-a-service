@@ -44,10 +44,10 @@ public class Project {
 	@Column(name="project_url")
 	private String project_url;
 
-	@Transient
+	@Column(name="project_username")
 	private String project_username;
 
-	@Transient
+	@Column(name="project_password")
 	private String project_password;
 
 	@Column(name="app_url")
