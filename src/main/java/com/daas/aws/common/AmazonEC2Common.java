@@ -274,7 +274,7 @@ public class AmazonEC2Common {
 	 * @param orgName
 	 */
 	
-	public void createCluster(com.daas.model.Project project, String instanceId, String key, String orgName) {
+	public void createCluster(com.daas.model.Project project, String instanceId, String key, String orgName, String mosquittoHostIP) {
 		String publicIP = getPublicIp(instanceId);
 
 		try {
@@ -282,6 +282,7 @@ public class AmazonEC2Common {
 			Shell shell = new SSH(publicIP, 22, "ec2-user", key);
 			List<String> cmdString = new ArrayList<String>();
 			cmdString.add("echo 'KUBERNETES_PROVIDER=aws' >> ~/.bashrc");
+			cmdString.add("echo 'MOSQUITTO_HOST=MOST' >> ~/.bashrc".replace("MOST",mosquittoHostIP));
 			cmdString.add("echo 'MASTER_SIZE=MRSE' >> ~/.bashrc".replace("MRSE", project.getMaster_size()));
 			cmdString.add("echo 'NODE_SIZE=NESE' >> ~/.bashrc".replace("NESE", project.getNode_size()));
 			cmdString.add("echo 'NUM_NODES=XN' >> ~/.bashrc".replace("XN",project.getNode_numbers()));

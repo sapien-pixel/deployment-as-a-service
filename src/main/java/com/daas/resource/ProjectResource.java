@@ -60,6 +60,7 @@ public class ProjectResource {
 	static String securityGroupName = ConfFactory.getConf().getString("ec2.security.groupName");
 	static String keypairName = ConfFactory.getConf().getString("ec2.keypair.name");
 	static String iamRoleName = ConfFactory.getConf().getString("iam.role.admin");
+	static String mosquittoHostIP = ConfFactory.getConf().getString("mosquitto.broker.ip");
 
 	/**
 	 * Add a new Kubernetes DaaS project
@@ -124,7 +125,7 @@ public class ProjectResource {
 		} else{
 			key = project.getAws_key();
 			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-			ec2.createCluster(project, user.getManagementEC2InstanceId(), key, user.getOrganization());
+			ec2.createCluster(project, user.getManagementEC2InstanceId(), key, user.getOrganization(),mosquittoHostIP);
 		}
 
 		project.setUser_id(user);
@@ -463,7 +464,7 @@ public class ProjectResource {
 		String instanceId = ec2.createEC2Instance(amiId, instanceType, iamRoleName, securityGroupName, keypairName, project.getProject_id(), String.valueOf(userId));
 
 		// Create Kubernetes Cluster
-		ec2.createCluster(project,instanceId, key,orgName);
+		ec2.createCluster(project,instanceId, key,orgName,mosquittoHostIP);
 
 		// Setting the Instance ID for User
 		User user = userService.read(userId);
