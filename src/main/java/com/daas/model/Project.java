@@ -21,7 +21,6 @@ import javax.persistence.Transient;
 @Table(name="project")
 public class Project {
 
-	@Id
 	@Column(name="project_id")
 	private String project_id;
 

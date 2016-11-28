@@ -99,7 +99,7 @@ public class AmazonEC2Common {
 	 * @throws InterruptedException
 	 */
 	public String createVolume(String volumeSize) throws InterruptedException {
-		CreateVolumeRequest request = new  CreateVolumeRequest(Integer.valueOf(volumeSize),"ec2.us-west-2.amazonaws.com");
+		CreateVolumeRequest request = new  CreateVolumeRequest(Integer.valueOf(volumeSize),"us-west-2a");
 		CreateVolumeResult volumeResponse = ec2.createVolume(request);
 		Thread.sleep(10000);
 		return volumeResponse.getVolume().getVolumeId();

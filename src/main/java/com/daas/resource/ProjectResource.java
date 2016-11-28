@@ -112,23 +112,22 @@ public class ProjectResource {
 
 		// first project
 		User user = userService.read(user_id);
+		project.setUser_id(user);
 		String key = null;
-		if(user.getManagementEC2InstanceId() == DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID) {
+		if(user.getManagementEC2InstanceId().equals(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID)) {
 			// create keypair
 			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-			key = ec2.createEC2KeyPair(keypairName);
 			if(project.getVolume_size()!=null) {
 				project.setVolume_id(ec2.createVolume(project.getVolume_size()));
 			}
 			project = createFirstProject(project,user_id, user.getOrganization());
-
+			key = project.getAws_key();
 		} else{
 			key = project.getAws_key();
 			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 			ec2.createCluster(project, user.getManagementEC2InstanceId(), key, user.getOrganization(),mosquittoHostIP);
 		}
 
-		project.setUser_id(user);
 		project.setDateCreated(System.currentTimeMillis());
 		project = projectService.create(project);
 
@@ -171,6 +170,8 @@ public class ProjectResource {
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
 
 		String project_url = project.getProject_url();
+		
+		// TODO: add project_username and project_password also
 		
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
