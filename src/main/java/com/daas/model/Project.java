@@ -21,7 +21,8 @@ import javax.persistence.Transient;
 @Table(name="project")
 public class Project {
 
-	@Column(name="project_id")
+	@Id
+	@Column(name="project_id",unique=true,columnDefinition="VARCHAR(64)")
 	private String project_id;
 
 	@Column(name="projectName")
