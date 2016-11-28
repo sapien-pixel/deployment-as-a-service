@@ -13,12 +13,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.daas.common.DaaSConstants;
 import com.daas.model.Project;
 import com.daas.model.User;
@@ -250,6 +252,6 @@ public class UserResource {
 
 		List<Project> projects = userService.getAllProjects(user);
 
-		return Response.ok("Success").entity(projects.toString()).build();		
+		return Response.ok("Success").entity(new GenericEntity<List<Project>>(projects) {}).build();		
 	}
 }

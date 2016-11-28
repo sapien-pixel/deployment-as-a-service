@@ -135,8 +135,7 @@ public class ProjectResource {
 		project.setCloud_access_key(null);
 		project.setCloud_secret_key(null);
 
-		// send keyPair in header, send null if not first project
-		return Response.ok("Succesfully added Project").header("AWS_Key", key).entity(project).build();		
+		return Response.ok("Succesfully added Project").entity(project).build();		
 	}
 	
 	/**
