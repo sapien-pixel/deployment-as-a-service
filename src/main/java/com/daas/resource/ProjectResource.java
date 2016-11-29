@@ -170,12 +170,13 @@ public class ProjectResource {
 
 		String project_url = project.getProject_url();
 		
-		// TODO: add project_username and project_password also
-		
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("project_id", id);
 		map.put("project_url", project_url);
+		map.put("project_username", project.getProject_username());
+		map.put("project_password", project.getProject_password());
+		
 		DaasUtil.checkForNull(map);
 				
 		project = projectService.read(id);
@@ -184,6 +185,8 @@ public class ProjectResource {
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
 
 		project.setProject_url(project_url);
+		project.setProject_username(project.getProject_username());
+		project.setProject_password(project.getProject_password());
 		projectService.update(project);
 		
 		return Response.ok("Succesfully updated Project with Cluster IP").entity(project).build();		
@@ -301,7 +304,6 @@ public class ProjectResource {
 		if(client == null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Project's Kubernetes Cluster").build();
 				
-		// TODO: confirm if UI can handle the number of replicas in same object
 		// create services and deployments		
 		List<Service> services= KubernetesService.createKubeServices(client, project.getServices());
 		List<Deployment> deployments = KubernetesDeployment.createKubeDeployments(client, project.getDeployments());		
@@ -435,7 +437,6 @@ public class ProjectResource {
 		return Response.ok("Succesfully deleted Project").entity(project).build();
 	}
 
-	// TODO: make this private?
 	/**
 	 * Extension static method from /add REST API to create EC2 instance and create Kubernetes Cluster
 	 * @param project
