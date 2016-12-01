@@ -41,7 +41,7 @@ public class KubeConnectionTest {
 		// give permissions - gsutil acl ch -r -u AllUsers:R gs://artifacts.kubernetes-mean.appspot.com	
 		
 
-		// GET services, deployments from existing cluster
+		// GET services, deployments from existing cluster 
 		KubernetesConnection kubernetesConnection = new KubernetesConnection("https://104.154.210.157:443", "admin", "aHdvkw6teCg5dhon");
 		KubernetesClient client = kubernetesConnection.getClient();
 		List<Service> services = KubernetesService.getAllKubeServices(client) ;

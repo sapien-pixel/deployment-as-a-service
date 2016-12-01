@@ -240,7 +240,7 @@ public class AmazonEC2Common {
 		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest); 
 		Date date = describeInstanceResult.getReservations().get(0).getInstances().get(0).getLaunchTime();		
 		return date.getTime();
-	}
+	}	
 
 	/**
 	 * Share an AMI with an user account

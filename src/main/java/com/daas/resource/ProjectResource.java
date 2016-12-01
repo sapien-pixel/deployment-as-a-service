@@ -129,7 +129,7 @@ public class ProjectResource {
 		}
 
 		project.setDateCreated(System.currentTimeMillis());
-		project = projectService.create(project);
+		projectService.create(project);
 
 		// set keys null
 		project.setCloud_access_key(null);
@@ -203,7 +203,7 @@ public class ProjectResource {
 	 * @return updated Project object
 	 * @throws Exception
 	 */
-	@GET
+	@POST
 	@Path("/clusterDetails/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getClusterDetails(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("id") String id) throws Exception{
