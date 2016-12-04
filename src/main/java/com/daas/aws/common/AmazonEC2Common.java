@@ -240,7 +240,7 @@ public class AmazonEC2Common {
 		DescribeInstancesResult describeInstanceResult = ec2.describeInstances(describeInstanceRequest); 
 		Date date = describeInstanceResult.getReservations().get(0).getInstances().get(0).getLaunchTime();		
 		return date.getTime();
-	}
+	}	
 
 	/**
 	 * Share an AMI with an user account
@@ -308,9 +308,7 @@ public class AmazonEC2Common {
 	 * @param key
 	 * @param orgName
 	 */
-	
-	public void deleteCluster(com.daas.model.Project project, String instanceId, String key) {
-		String publicIP = getPublicIp(instanceId);
+	public static void deleteCluster(com.daas.model.Project project, String publicIP, String key) {
 		
 		try {
 			Shell shell = new SSH(publicIP, 22, "ec2-user", key);

@@ -28,8 +28,14 @@ public class KubeConnectionTest {
 	@Test
 	public void checkKubeConn() {
 
-		// GET services, deployments from existing cluster
-		KubernetesConnection kubernetesConnection = new KubernetesConnection("https://104.197.205.19:443", "", "");
+		// to get cluster ip, usename, password
+		// gcloud container clusters describe mean-cluster
+		// give permissions - gsutil acl ch -r -u AllUsers:R gs://artifacts.kubernetes-mean.appspot.com	
+		
+
+		// GET services, deployments from existing cluster 
+		KubernetesConnection kubernetesConnection = new KubernetesConnection("https://104.154.210.157:443", "admin", "aHdvkw6teCg5dhon");
+
 		KubernetesClient client = kubernetesConnection.getClient();
 		List<Service> services = KubernetesService.getAllKubeServices(client) ;
 		List<Deployment> deployments = KubernetesDeployment.getAllKubeDeployments(client);
