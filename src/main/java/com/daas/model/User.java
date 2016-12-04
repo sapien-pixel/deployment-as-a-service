@@ -41,7 +41,10 @@ public class User {
 	private long dateRegistered;
 	
 	@Column(name="managementEC2InstanceId")
-	private String managementEC2InstanceId; 
+	private String managementEC2InstanceId;
+	
+	@Column(name="managementEC2InstancePulicIp")
+	private String managementEC2InstancePulicIp;
 
 	/**
 	 * @return the user_id
@@ -147,6 +150,20 @@ public class User {
 
 	public void setManagementEC2InstanceId(String managementEC2InstanceId) {
 		this.managementEC2InstanceId = managementEC2InstanceId;
+	}
+	
+	/**
+	 * @return the managementEC2InstancePulicIp
+	 */
+	public String getManagementEC2InstancePulicIp() {
+		return managementEC2InstancePulicIp;
+	}
+
+	/**
+	 * @param managementEC2InstancePulicIp the managementEC2InstancePulicIp to set
+	 */
+	public void setManagementEC2InstancePulicIp(String managementEC2InstancePulicIp) {
+		this.managementEC2InstancePulicIp = managementEC2InstancePulicIp;
 	}
 	
 }

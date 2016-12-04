@@ -54,6 +54,8 @@ public class UserResource {
 
 		//set managementEC2InstanceId as temp to avoid Input Invalid Exception
 		user.setManagementEC2InstanceId(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID);
+		user.setManagementEC2InstancePulicIp(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_IP);
+		
 		// check for null values
 		DaasUtil.checkForNull(user);
 

@@ -399,7 +399,7 @@ public class ProjectResource {
 	 * 					User Id
 	 * @return deleted Project
 	 */
-	@DELETE
+	@POST
 	@Path("/delete/{user_id}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response deleteProject(@CookieParam("daas-token") Cookie cookie, Project project, @PathParam("user_id") long user_id){
@@ -429,8 +429,7 @@ public class ProjectResource {
 		String key = project.getAws_key();
 		User user = userService.read(user_id);
 
-		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-		ec2.deleteCluster(project, user.getManagementEC2InstanceId(),key);
+		AmazonEC2Common.deleteCluster(project, user.getManagementEC2InstancePulicIp(),key);
 
 		project = projectService.delete(project);
 
@@ -470,6 +469,7 @@ public class ProjectResource {
 		// Setting the Instance ID for User
 		User user = userService.read(userId);
 		user.setManagementEC2InstanceId(instanceId);
+		user.setManagementEC2InstancePulicIp(ec2.getPublicIp(instanceId));
 		userService.update(user);
 
 		return project;

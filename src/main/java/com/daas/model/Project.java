@@ -69,7 +69,7 @@ public class Project {
 	private String cloud_secret_key;
 
 	@Transient
-	private String Aws_key;
+	private String aws_key;
 	
 	@Column(name="masterSize")
 	private String master_size;
@@ -308,14 +308,14 @@ public class Project {
 	 * @return the aws_key
 	 */
 	public String getAws_key() {
-		return Aws_key;
+		return aws_key;
 	}
 
 	/**
 	 * @param aws_key the aws_key to set
 	 */
 	public void setAws_key(String aws_key) {
-		Aws_key = aws_key;
+		this.aws_key = aws_key;
 	}
 
 	/**
