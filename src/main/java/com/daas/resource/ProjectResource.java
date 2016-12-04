@@ -486,7 +486,6 @@ public class ProjectResource {
 
 		project = projectService.delete(project);
 		
-		user = userService.create(user);
 		user.setPassword(null);
 
 		return Response.ok("Succesfully deleted Project").entity(user).build();
