@@ -485,8 +485,11 @@ public class ProjectResource {
 		AmazonEC2Common.deleteCluster(project, user.getManagementEC2InstancePulicIp(),key);
 
 		project = projectService.delete(project);
+		
+		user = userService.create(user);
+		user.setPassword(null);
 
-		return Response.ok("Succesfully deleted Project").entity(project).build();
+		return Response.ok("Succesfully deleted Project").entity(user).build();
 	}
 
 	/**
