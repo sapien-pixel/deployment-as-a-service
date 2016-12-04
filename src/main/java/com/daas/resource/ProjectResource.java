@@ -1,10 +1,13 @@
 package com.daas.resource;
 
+import io.fabric8.kubernetes.api.model.AWSElasticBlockStoreVolumeSource;
 import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.extensions.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -114,17 +117,17 @@ public class ProjectResource {
 		User user = userService.read(user_id);
 		project.setUser_id(user);
 		String key = null;
+		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
+		
+		if(project.getVolume_size()!=null) {
+			project.setVolume_id(ec2.createVolume(project.getVolume_size()));
+		}
+		
 		if(user.getManagementEC2InstanceId().equals(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID)) {
-			// create keypair
-			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
-			if(project.getVolume_size()!=null) {
-				project.setVolume_id(ec2.createVolume(project.getVolume_size()));
-			}
 			project = createFirstProject(project,user_id, user.getOrganization());
 			key = project.getAws_key();
 		} else{
 			key = project.getAws_key();
-			AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 			ec2.createCluster(project, user.getManagementEC2InstanceId(), key, user.getOrganization(),mosquittoHostIP);
 		}
 
@@ -305,15 +308,65 @@ public class ProjectResource {
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Project's Kubernetes Cluster").build();
 				
 		// create services and deployments		
-		List<Service> services= KubernetesService.createKubeServices(client, project.getServices());
-		List<Deployment> deployments = KubernetesDeployment.createKubeDeployments(client, project.getDeployments());		
 		
-		project.setServices(services);
-		project.setDeployments(deployments);
+		//Add volume to deployments
+		for(int i=0; i<project.getDeployments().size();i++) {
+			
+			if(project.getDeployments().get(i).getSpec().getTemplate().getSpec().getVolumes().size() >0) {
+				project.getDeployments().get(i).getSpec().getTemplate().getSpec().setVolumes(null);
+				Volume vol = new Volume();
+				vol.setName(project.getDeployments().get(i).getSpec().getTemplate().getSpec().getContainers().get(0).getVolumeMounts().get(0).getName());
+				AWSElasticBlockStoreVolumeSource src = new AWSElasticBlockStoreVolumeSource();
+				src.setVolumeID(project.getVolume_id());
+				src.setFsType("ext4");
+				vol.setAwsElasticBlockStore(src);
+				List<Volume> list = new ArrayList<Volume>();
+				list.add(vol);
+				project.getDeployments().get(i).getSpec().getTemplate().getSpec().setVolumes(list);
+			}
+		}
+		
+		
+		//Create Services and Deployments
+		for(int i=0, j=0;(i<project.getDeployments().size() || j<project.getServices().size());i++, j++) {
+			
+			
+			if(j < project.getServices().size()) {
+				KubernetesService.createKubeService(client, project.getServices().get(j));
+			}
+			
+			try {
+				Thread.sleep(20000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			if(i < project.getDeployments().size()) {
+				KubernetesDeployment.createKubeDeployment(client, project.getDeployments().get(i));
+			}
+			
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		List<Service> newServices = KubernetesService.getAllKubeServices(client);
+		
+		project.setServices(project.getServices());
+		project.setDeployments(project.getDeployments());
 		
 		// TODO: the external IP takes some time
 		// set App IP
-		project = addAppIpToProject(project, services);		
+		project = addAppIpToProject(project, newServices);
+		projectService.update(project);
+		
+		
+		//Wait for the application to become up and running
+		Thread.sleep(60000);
 		
 		return Response.ok("Succesfully deployed app").entity(project).build();		
 	}
@@ -487,15 +540,14 @@ public class ProjectResource {
 		
 		String ip;
 		for(Service service: services){
-			// TODO: what to get? couple of options here
-			ip = service.getStatus().getLoadBalancer().getIngress().get(0).getIp();
-			if(ip != null){
-				project.setApp_url(ip);
-				break;
-			}			
+			if(service.getSpec().getType().equals("LoadBalancer")) {
+				ip = service.getStatus().getLoadBalancer().getIngress().get(0).getHostname();
+				if(ip != null){
+					project.setApp_url(ip);
+					break;
+				}			
+			}
 		}
 		return project;
 	}
-
-	
 }

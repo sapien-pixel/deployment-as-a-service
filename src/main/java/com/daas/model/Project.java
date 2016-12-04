@@ -77,7 +77,7 @@ public class Project {
 	@Column(name="volumeSize")
 	private String volume_size;
 	
-	@Transient
+	@Column(name="volumeId")
 	private String volume_id;
 
 	@Column(name="nodeSize")
