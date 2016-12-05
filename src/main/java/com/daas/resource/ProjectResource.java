@@ -3,7 +3,6 @@ package com.daas.resource;
 import io.fabric8.kubernetes.api.model.AWSElasticBlockStoreVolumeSource;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.extensions.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.CookieParam;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -119,6 +117,7 @@ public class ProjectResource {
 		String key = null;
 		AmazonEC2Common ec2 = new AmazonEC2Common(new BasicAWSCredentials(project.getCloud_access_key(), project.getCloud_secret_key()));
 		
+		// create volume if user provides vol size, else project already has vol id
 		if(project.getVolume_size()!=null) {
 			project.setVolume_id(ec2.createVolume(project.getVolume_size()));
 		}
@@ -171,14 +170,16 @@ public class ProjectResource {
 		if(!validToken)
 			return Response.status(Response.Status.UNAUTHORIZED).entity("Unauthorized").build();
 
-		String project_url = project.getProject_url();
+		String project_url = project.getProject_url().replace("\n", "").trim();
+		String project_username = project.getProject_username();
+		String project_password = project.getProject_password().replace("\n", "").trim();
 		
 		// check for mandatory fields, if null values
 		Map<String,Object> map = new  HashMap<String,Object>();
 		map.put("project_id", id);
 		map.put("project_url", project_url);
-		map.put("project_username", project.getProject_username());
-		map.put("project_password", project.getProject_password());
+		map.put("project_username", project_username);
+		map.put("project_password", project_password);
 		
 		DaasUtil.checkForNull(map);
 				
@@ -188,8 +189,8 @@ public class ProjectResource {
 			return Response.status(Response.Status.BAD_REQUEST).entity("Invalid project").build();
 
 		project.setProject_url(project_url);
-		project.setProject_username(project.getProject_username());
-		project.setProject_password(project.getProject_password());
+		project.setProject_username(project_username);
+		project.setProject_password(project_password);
 		projectService.update(project);
 		
 		return Response.ok("Succesfully updated Project with Cluster IP").entity(project).build();		
@@ -301,8 +302,10 @@ public class ProjectResource {
 		if(project.getServices().size()==0 || project.getDeployments().size()==0)
 			return Response.ok("No services/deployments to deploy").entity(project).build();
 		
+		String newClusterUrl = "https://"+project.getProject_url()+":443";
+		
 		// Connect to Kubernetes cluster
-		KubernetesConnection kubernetesConnection = new KubernetesConnection(project.getProject_url(), project.getProject_username(), project.getProject_password());
+		KubernetesConnection kubernetesConnection = new KubernetesConnection(newClusterUrl, project.getProject_username(), project.getProject_password());
 		KubernetesClient client = kubernetesConnection.getClient();
 		if(client == null)
 			return Response.status(Response.Status.BAD_REQUEST).entity("Could Not Connect to Project's Kubernetes Cluster").build();

@@ -68,10 +68,10 @@ public class ProjectServiceImpl implements ProjectService{
 		if(valid_project.getProject_url()==null || valid_project.getProject_url().isEmpty() || valid_project.getProject_url()=="")
 			return false;
 		
-		if(DaasUtil.validURL(valid_project.getProject_url()))
-			return true;
+//		if(DaasUtil.validURL(valid_project.getProject_url()))
+//			return true;
 		
-		return false;
+		return true;
 	}
 	
 
