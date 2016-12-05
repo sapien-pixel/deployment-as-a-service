@@ -120,6 +120,8 @@ public class ProjectResource {
 		// create volume if user provides vol size, else project already has vol id
 		if(project.getVolume_size()!=null) {
 			project.setVolume_id(ec2.createVolume(project.getVolume_size()));
+		} else {
+			project.setVolume_size(Integer.toString(ec2.getVolumeSize(project.getVolume_id())));
 		}
 		
 		if(user.getManagementEC2InstanceId().equals(DaaSConstants.TEMP_MGMT_EC2_INSTANCE_ID)) {

@@ -22,6 +22,8 @@ import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.CreateVolumeResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.DescribeVolumesResult;
 import com.amazonaws.services.ec2.model.IamInstanceProfileSpecification;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceState;
@@ -104,6 +106,21 @@ public class AmazonEC2Common {
 		Thread.sleep(10000);
 		return volumeResponse.getVolume().getVolumeId();
 	}
+	
+	/**
+	 * Get volume size (EBS) from volume id
+	 * @param volumeId
+	 * @return
+	 */
+	public int getVolumeSize(String volumeId){
+		
+		DescribeVolumesRequest describeVolumesRequest = new DescribeVolumesRequest();
+		describeVolumesRequest.withVolumeIds(volumeId);
+		
+		DescribeVolumesResult describeVolumesResult = ec2.describeVolumes(describeVolumesRequest);
+		return describeVolumesResult.getVolumes().get(0).getSize();
+	}
+	
 
 	/**
 	 * Creates and launches Management Server on AWS
