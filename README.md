@@ -10,3 +10,5 @@ export KUBERNETES_PROVIDER=aws;
 export MASTER_SIZE=t2.micro;
 export NODE_SIZE=t2.micro;
 export NUM_NODES=3
+
+![Alt text](http://imgur.com/download/YblLfqu "Architecture Diagram")
